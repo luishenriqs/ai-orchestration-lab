@@ -1,0 +1,392 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-orchestration-lab.local/schemas/task-contract.schema.json",
+  "title": "TaskContract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_revision",
+    "identity",
+    "governance",
+    "scope",
+    "validation",
+    "execution",
+    "rollback",
+    "ias_normative_card"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.3-p0"
+    },
+    "contract_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_id",
+        "backlog_id",
+        "repository",
+        "workspace_context_id",
+        "workspace_root",
+        "base_commit"
+      ],
+      "properties": {
+        "execution_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "backlog_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workspace_context_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workspace_root": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^/[^\\0]*$"
+        },
+        "base_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["risk_level", "approval_required"],
+      "properties": {
+        "risk_level": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        },
+        "approval_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objective",
+        "allowed_impl_paths",
+        "allowed_test_paths",
+        "forbidden_changes",
+        "protected_existing_tests"
+      ],
+      "properties": {
+        "objective": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowed_impl_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^*?\\[\\]\\0]+$"
+          }
+        },
+        "allowed_test_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^*?\\[\\]\\0]+$"
+          }
+        },
+        "forbidden_changes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "protected_existing_tests": {
+          "type": "boolean"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy",
+        "positive_tests",
+        "negative_tests",
+        "boundary_tests",
+        "acceptance_checks",
+        "validation_commands"
+      ],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "RED_GREEN",
+            "RED_GREEN_WHEN_APPLICABLE",
+            "REGRESSION_BASELINE",
+            "STRUCTURAL_VALIDATION",
+            "CONFIGURATION_VALIDATION"
+          ]
+        },
+        "positive_tests": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "negative_tests": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "boundary_tests": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "acceptance_checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "validation_commands": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selected_executor",
+        "mode",
+        "timeout_seconds",
+        "retry_limit"
+      ],
+      "properties": {
+        "selected_executor": {
+          "type": "string",
+          "enum": ["codex", "antigravity", "synthetic"]
+        },
+        "mode": {
+          "type": "string",
+          "const": "CONTROLLED"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retry_limit": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["procedure"],
+      "properties": {
+        "procedure": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "ias_normative_card": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "execution_id",
+        "backlog_id",
+        "status",
+        "objective",
+        "source_sections",
+        "predecessors",
+        "files_or_packages_expected",
+        "invariants",
+        "api_contracts",
+        "database_tables_and_locks",
+        "security_controls",
+        "audit_and_observability",
+        "test_plan",
+        "evidence_expected",
+        "rollback_plan",
+        "acceptance_checks",
+        "review_required",
+        "human_authorization"
+      ],
+      "properties": {
+        "execution_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "backlog_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "in_progress",
+            "implemented",
+            "validated",
+            "done",
+            "blocked"
+          ]
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sections": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "predecessors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "files_or_packages_expected": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "invariants": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "api_contracts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "database_tables_and_locks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "security_controls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "audit_and_observability": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "test_plan": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "positive",
+            "negative",
+            "concurrency",
+            "integration"
+          ],
+          "properties": {
+            "positive": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "negative": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "concurrency": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "integration": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "evidence_expected": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rollback_plan": {
+          "type": "string",
+          "minLength": 1
+        },
+        "acceptance_checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "review_required": {
+          "type": "boolean"
+        },
+        "human_authorization": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

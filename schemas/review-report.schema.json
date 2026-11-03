@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-orchestration-lab.local/schemas/review-report.schema.json",
+  "title": "ReviewReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_id",
+    "execution_id",
+    "attempt_id",
+    "reviewed_contract_sha256",
+    "reviewed_diff_sha256",
+    "reviewer_model",
+    "review_timestamp",
+    "categories_evaluated",
+    "findings",
+    "verdict",
+    "limitations"
+  ],
+  "$defs": {
+    "ReviewCategory": {
+      "type": "string",
+      "enum": [
+        "Requisitos",
+        "Comportamento",
+        "Segurança",
+        "Confidencialidade",
+        "Concorrência",
+        "Integridade",
+        "Testes positivos",
+        "Testes negativos",
+        "Casos de borda",
+        "Escopo",
+        "Rollback",
+        "Compatibilidade normativa"
+      ]
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.3-p0"
+    },
+    "review_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewed_contract_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reviewed_diff_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reviewer_model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "review_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "categories_evaluated": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "applicable"],
+        "properties": {
+          "category": {
+            "$ref": "#/$defs/ReviewCategory"
+          },
+          "applicable": {
+            "type": "boolean"
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "if": {
+          "properties": {
+            "applicable": {
+              "const": false
+            }
+          },
+          "required": ["applicable"]
+        },
+        "then": {
+          "required": ["justification"],
+          "properties": {
+            "justification": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "finding_id",
+          "severity",
+          "category",
+          "evidence",
+          "source_reference",
+          "recommendation",
+          "blocking"
+        ],
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+          },
+          "category": {
+            "$ref": "#/$defs/ReviewCategory"
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recommendation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "blocking": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["APPROVED", "APPROVED_WITH_RECOMMENDATIONS", "REJECTED"]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

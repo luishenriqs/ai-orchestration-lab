@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-orchestration-lab.local/schemas/review-handoff-package.schema.json",
+  "title": "ReviewHandoffPackage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "handoff_id",
+    "execution_id",
+    "attempt_id",
+    "contract_sha256",
+    "diff_sha256",
+    "workspace_context_id",
+    "data_classification",
+    "evidence_manifest_path",
+    "included_artifacts",
+    "review_questions",
+    "sanitization_status",
+    "export_authorization_ref"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.3-p0"
+    },
+    "handoff_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "diff_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "workspace_context_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data_classification": {
+      "type": "string",
+      "enum": [
+        "SYNTHETIC_LAB",
+        "INTERNAL_NON_SENSITIVE",
+        "CLIENT_CONFIDENTIAL"
+      ]
+    },
+    "evidence_manifest_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "included_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "review_questions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "sanitization_status": {
+      "type": "string",
+      "enum": ["PENDING", "APPROVED", "BLOCKED"]
+    },
+    "export_authorization_ref": {
+      "type": ["string", "null"],
+      "minLength": 1
+    }
+  }
+}

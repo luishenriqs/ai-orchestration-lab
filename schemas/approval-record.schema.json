@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-orchestration-lab.local/schemas/approval-record.schema.json",
+  "title": "ApprovalRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "approval_id",
+    "execution_id",
+    "contract_revision",
+    "approved_contract_sha256",
+    "canonicalization_version",
+    "approval_scope",
+    "authorized_by",
+    "authorized_at",
+    "approval_source"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.3-p0"
+    },
+    "approval_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "approved_contract_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "canonicalization_version": {
+      "type": "string",
+      "const": "JCS-RFC8785-v1"
+    },
+    "approval_scope": {
+      "type": "string",
+      "enum": ["PLAN_ONLY", "EXECUTION", "MERGE"]
+    },
+    "authorized_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authorized_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "approval_source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_diff_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "review_id": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "if": {
+    "properties": {
+      "approval_scope": {
+        "const": "MERGE"
+      }
+    },
+    "required": ["approval_scope"]
+  },
+  "then": {
+    "required": ["attempt_id", "approved_diff_sha256", "review_id"],
+    "properties": {
+      "attempt_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "approved_diff_sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "review_id": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

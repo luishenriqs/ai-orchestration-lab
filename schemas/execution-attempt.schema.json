@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-orchestration-lab.local/schemas/execution-attempt.schema.json",
+  "title": "ExecutionAttempt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "attempt_id",
+    "approval_id",
+    "approved_contract_sha256",
+    "executor",
+    "state",
+    "started_at",
+    "finished_at",
+    "base_commit",
+    "workspace_root",
+    "process_identity",
+    "termination_reason"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.3-p0"
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_contract_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "executor": {
+      "type": "string",
+      "enum": ["codex", "antigravity", "synthetic"]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "CREATED",
+        "RUNNING",
+        "COMPLETED",
+        "FAILED",
+        "INTERRUPTED",
+        "BLOCKED"
+      ]
+    },
+    "started_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "base_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "workspace_root": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^/[^\\0]*$"
+    },
+    "process_identity": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["pid", "process_start_token"],
+      "properties": {
+        "pid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "process_start_token": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executable": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "termination_reason": {
+      "type": ["string", "null"],
+      "enum": [
+        "NORMAL",
+        "TIMEOUT",
+        "AUTH_FAILURE",
+        "QUOTA_EXCEEDED",
+        "PROVIDER_FAILURE",
+        "SCOPE_VIOLATION",
+        "PROCESS_FAILURE",
+        "INTERRUPTED",
+        "COLLECTION_FAILURE",
+        null
+      ]
+    }
+  },
+  "if": {
+    "properties": {
+      "finished_at": {
+        "type": "string"
+      }
+    },
+    "required": ["finished_at"]
+  },
+  "then": {
+    "properties": {
+      "termination_reason": {
+        "type": "string",
+        "enum": [
+          "NORMAL",
+          "TIMEOUT",
+          "AUTH_FAILURE",
+          "QUOTA_EXCEEDED",
+          "PROVIDER_FAILURE",
+          "SCOPE_VIOLATION",
+          "PROCESS_FAILURE",
+          "INTERRUPTED",
+          "COLLECTION_FAILURE"
+        ]
+      }
+    },
+    "required": ["termination_reason"]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-orchestration-lab.local/schemas/execution-result.schema.json",
+  "title": "ExecutionResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "attempt_id",
+    "executor",
+    "agent_declared_outcome",
+    "agent_summary",
+    "agent_reported_blockers"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.3-p0"
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executor": {
+      "type": "string",
+      "enum": ["codex", "antigravity", "synthetic"]
+    },
+    "agent_declared_outcome": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_reported_blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

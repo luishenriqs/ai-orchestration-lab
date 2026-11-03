@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-orchestration-lab.local/schemas/evidence-manifest.schema.json",
+  "title": "EvidenceManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "attempt_id",
+    "evidence_origin",
+    "git",
+    "test_evidence",
+    "independent_test_runs",
+    "scope_validation",
+    "evidence_integrity"
+  ],
+  "$defs": {
+    "TestRunRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "working_directory",
+        "started_at",
+        "duration_ms",
+        "exit_code",
+        "log_path",
+        "log_sha256",
+        "observed_outcome"
+      ],
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "working_directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exit_code": {
+          "type": ["integer", "null"]
+        },
+        "log_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "log_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "observed_outcome": {
+          "type": "string",
+          "enum": ["PASS", "FAIL", "ERROR", "TIMEOUT"]
+        }
+      }
+    },
+    "NullableTestRunRecord": {
+      "anyOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/TestRunRecord" }
+      ]
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.3-p0"
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_origin": {
+      "type": "string",
+      "const": "HOST_OBSERVED"
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_sha",
+        "head_sha",
+        "dirty_worktree_files",
+        "diff_sha256"
+      ],
+      "properties": {
+        "base_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "head_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "dirty_worktree_files": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "diff_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "test_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "red", "green", "baseline"],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "RED_GREEN",
+            "RED_GREEN_WHEN_APPLICABLE",
+            "REGRESSION_BASELINE",
+            "STRUCTURAL_VALIDATION",
+            "CONFIGURATION_VALIDATION"
+          ]
+        },
+        "red": {
+          "$ref": "#/$defs/NullableTestRunRecord"
+        },
+        "green": {
+          "$ref": "#/$defs/NullableTestRunRecord"
+        },
+        "baseline": {
+          "$ref": "#/$defs/NullableTestRunRecord"
+        }
+      }
+    },
+    "independent_test_runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TestRunRecord"
+      }
+    },
+    "scope_validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "unexpected_files"],
+      "properties": {
+        "result": {
+          "type": "string",
+          "enum": ["PENDING", "PASS", "FAIL"]
+        },
+        "unexpected_files": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "evidence_integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_hashes"],
+      "properties": {
+        "artifact_hashes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

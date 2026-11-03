@@ -11,22 +11,25 @@ O laboratório `ai-orchestration-lab` é um projeto **estritamente independente*
 - Nenhuma atividade deste laboratório altera documentos canônicos, estados normativos, cartões ou código-fonte do IAS.
 - Na Fase P1, todas as execuções operam exclusivamente sobre dados e fixtures sintéticas (`SYNTHETIC_LAB`).
 
-## 3. Escopo Atual (`P1-001 — Inicializar o laboratório`)
+## 3. Escopo Atual (`P1-001` e `P1-002`)
 
-O estado atual do código corresponde **exclusivamente à fundação técnica da tarefa `P1-001`**:
+O estado atual do código contempla a fundação técnica da **`P1-001`** e a infraestrutura de validação estrutural de contratos da **`P1-002`**:
 
-- Inicialização do pacote Node.js 24 (`"type": "module"`) e TypeScript (`5.9.3`).
-- Instalação exata e reproduzível das dependências de base (`ajv@8.20.0`, `ajv-formats@3.0.1`, `typescript@5.9.3`, `@types/node@24.19.2`).
-- Criação da estrutura canônica de diretórios do laboratório.
-- Configuração de compilação (`tsc`), verificação estática de tipos (`tsc --noEmit`) e execução de testes com o runner nativo (`node:test`).
-- Módulo mínimo de identificação da fundação (`src/index.ts`) e suíte unitária de verificação da infraestrutura (`tests/unit/foundation.test.ts`).
+- **Fundação (`P1-001`):**
+  - Inicialização do pacote Node.js 24 (`"type": "module"`) e TypeScript (`5.9.3`).
+  - Instalação exata e reproduzível das dependências de base (`ajv@8.20.0`, `ajv-formats@3.0.1`, `typescript@5.9.3`, `@types/node@24.19.2`).
+  - Estrutura canônica de diretórios do laboratório, compilação (`tsc`), verificação estática de tipos (`tsc --noEmit`) e suíte de fundação (`tests/unit/foundation.test.ts`).
+- **Validação Estrutural de Contratos (`P1-002`):**
+  - Sete arquivos JSON Schema Draft 2020-12 em `schemas/` (`TaskContract`, `ApprovalRecord`, `ExecutionAttempt`, `ExecutionResult`, `EvidenceManifest`, `ReviewHandoffPackage`, `ReviewReport`).
+  - Carregador determinístico de schemas independente de `process.cwd()` (`src/contracts/schema-loader.ts`).
+  - Validador estrito `Ajv2020` + `ajv-formats` (`strict: true, allErrors: true, coerceTypes: false, useDefaults: false, removeAdditional: false, allowUnionTypes: true`) em `src/contracts/validator.ts` e tipos normativos em `src/contracts/types.ts`.
+  - Suíte unitária completa para os sete contratos (`tests/unit/contracts-validation.test.ts`).
 
 ## 4. Limitações Atuais e Funcionalidades Reservadas às Etapas Posteriores
 
-**Importante:** A conclusão da `P1-001` fornece apenas a infraestrutura base. Os seguintes componentes **ainda não estão implementados** e pertencem às tarefas subsequentes (sujeitas aos respectivos gates de autorização):
+**Importante:** A conclusão das tarefas `P1-001` e `P1-002` fornece a infraestrutura base e a validação estrutural estática de contratos isolados. Os seguintes componentes **ainda não estão implementados** e pertencem às tarefas subsequentes (sujeitas aos respectivos gates de autorização):
 
-- **`P1-002`**: JSON Schemas (Draft 2020-12) e validação estrutural dos sete contratos da P0.
-- **`P1-003`**: Canonicalização JSON (`JCS-RFC8785-v1`), hashing SHA-256 e validação de `ApprovalRecord`.
+- **`P1-003`**: Canonicalização JSON (`JCS-RFC8785-v1`), hashing SHA-256 e validação semântica/relacional de `ApprovalRecord`.
 - **`P1-004`**: Ciclo de vida de `ExecutionAttempt`, detecção de tentativas órfãs (`Reconciler`) e rollback controlado.
 - **`P1-005`**: `FixtureWorkspaceManager`, `ExecutionAdapter`, executor sintético determinístico (`SYN-001` a `SYN-010`), protocolo `RED → GREEN` em duas fases e experimento de isolamento preventivo no WSL2.
 - **`P1-006`**: `EvidenceCollector`, `EvidenceManifest` e geração/validação semântica de `ReviewHandoffPackage`.

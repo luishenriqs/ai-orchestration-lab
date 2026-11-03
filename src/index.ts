@@ -25,3 +25,7 @@ export const NORMATIVE_SPECIFICATION_FILES: readonly string[] = Object.freeze([
   'docs/specifications/AI-Engineering-Operating-Model-v0.3-P0-Especificacao-Tecnica.md',
   'docs/specifications/P1-Plano-Tecnico-Implementacao-e-Validacao.md',
 ]);
+
+export * from './contracts/types.js';
+export * from './contracts/schema-loader.js';
+export * from './contracts/validator.js';
