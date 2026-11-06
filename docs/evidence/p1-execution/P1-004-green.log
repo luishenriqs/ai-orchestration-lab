@@ -1,0 +1,109 @@
+stage=P1-004 phase=green command=node --test --test-isolation=none --test-reporter=spec dist/tests/unit/*.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✔ P1-004 persists CREATED, rejects duplicates and preserves immutable history through valid terminal states (96.513509ms)
+✔ P1-004 rejects invalid transitions, reasons, traversal and inconsistent CREATED; blocks before start (2.620754ms)
+✔ P1-004 reconciles orphan using real process token, preserves logs and reconstructs stale projection (4.607587ms)
+✔ P1-004 detects journal tampering and leaves genuinely active process RUNNING (2.686425ms)
+✖ P1-004 rollback verifies registration/base/path, archives partial state, restores only owned fixture (12.380797ms)
+▶ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls
+  ✔ resolves workspaceRoot and schemasDir deterministically independent of process.cwd() (0.239159ms)
+  ✔ loads all 7 normative schemas with Draft 2020-12 "$schema" declaration (0.745028ms)
+  ✔ fails closed when schemasDir does not exist or contractType is unknown (1.718409ms)
+  ✔ rejects non-object roots (null, undefined, primitives, arrays) and malformed JSON without unhandled exceptions (2.438937ms)
+  ✔ never mutates frozen input objects and never performs silent type coercion (0.511082ms)
+✔ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls (6.130195ms)
+▶ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02)
+  ✔ (P1) accepts valid minimal TaskContract with ias_normative_card: null and empty arrays (0.338397ms)
+  ✔ (P2) accepts valid complete TaskContract with ias_normative_card (all 18 fields, 6 statuses, and structured test_plan object) (0.492374ms)
+  ✔ (P3) accepts all 5 validation strategies, 4 risk levels, 3 executors, mode CONTROLLED, and retry_limit >= 0 (0.254596ms)
+  ✔ (N1) rejects omission of each of the 9 required top-level fields (0.33785ms)
+  ✔ (N2) rejects omission of required subfields in identity, governance, scope, validation, execution, rollback (0.658238ms)
+  ✔ (N3) rejects omission of any of the 18 fields of ias_normative_card or any of the 4 fields of test_plan (0.590163ms)
+  ✔ (N4, N5, N6) rejects incompatible schema_version, forbidden task_ready field, and additionalProperties at root or subobjects (0.280388ms)
+  ✔ (N7) rejects unknown enum values in strategy, risk_level, selected_executor, mode, and ias_normative_card.status (0.209216ms)
+  ✔ (N8, B1, B2, B3, B4) rejects invalid types, globs, absolute/traversal paths, fractional numbers, empty strings, and malformed test_plan (0.500815ms)
+✔ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02) (3.999133ms)
+▶ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03)
+  ✔ (P1, P2, P3) accepts valid PLAN_ONLY, EXECUTION (with and without optional fields), and MERGE records (0.895572ms)
+  ✔ (N1) rejects omission of any of the 10 required base fields (0.29919ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid versions, scopes, additionalProperties, hashes, and timestamps (0.139835ms)
+  ✔ (B1, B2, B3) enforces MERGE conditional required fields and forbids null/empty strings in all scopes (0.398227ms)
+✔ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03) (1.858937ms)
+▶ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05)
+  ✔ (P1, P2, P3) accepts CREATED, RUNNING with process_identity, and finished attempts with all 9 termination reasons (0.276911ms)
+  ✔ (N1) rejects omission of any of the 13 required fields (0.270391ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid states, termination_reasons, executors, additionalProperties, and dates (0.227878ms)
+  ✔ (B1, B2) enforces unidirectional finished_at -> termination_reason rule and strict process_identity constraints (0.211415ms)
+✔ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05) (1.094249ms)
+▶ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01)
+  ✔ (P1, P2) accepts valid ExecutionResult with empty or populated blockers and non-empty outcome strings (0.325907ms)
+  ✔ (N1, N2, N3, N4, B1, B2) rejects missing fields, injected properties, empty strings, and nulls (0.308267ms)
+✔ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01) (0.70169ms)
+▶ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06)
+  ✔ (P1, P2) accepts initial manifest and complete manifest with TestRunRecords and artifact_hashes (1.255101ms)
+  ✔ (N1, N2, N3, N4) rejects missing fields, non-HOST_OBSERVED origin, additionalProperties, and invalid enums (0.378328ms)
+  ✔ (B1, B2, B3) rejects malformed TestRunRecord, invalid artifact_hashes items, and empty strings in file lists (0.363435ms)
+✔ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06) (2.088609ms)
+▶ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08)
+  ✔ (P1, P2) accepts initial and populated ReviewHandoffPackage across all data classifications and sanitization statuses (0.73919ms)
+  ✔ (N1, N2, N3, N4, N5, B1, B2) rejects missing fields, invalid enums, invalid included_artifacts, and empty/null violations (0.311782ms)
+✔ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08) (1.120409ms)
+▶ 7. ReviewReport validation (P0 §16, DEC-P1-002-09)
+  ✔ (P1, P2, P3) accepts valid reports with/without findings, all 12 categories, all 4 severities, all 3 verdicts, and applicable: false with justification (1.035136ms)
+  ✔ (N1, N2, N3, N4, N5, N6) rejects missing top/finding fields, invalid verdicts/severities/categories, and additionalProperties (0.399242ms)
+  ✔ (B1, B2, B3) enforces conditional justification when applicable === false and rejects string categories or coerced booleans (0.244094ms)
+✔ 7. ReviewReport validation (P0 §16, DEC-P1-002-09) (1.880923ms)
+▶ P1-001 foundation infrastructure
+  ✔ imports compiled foundation constants and validates strict assertions (0.1294ms)
+  ✔ verifies all required laboratory directories exist in the workspace (5.127433ms)
+  ✔ verifies normative specification documents are present and non-empty (0.358776ms)
+✔ P1-001 foundation infrastructure (6.007034ms)
+✔ P1-003 RFC8785 recursive ordering, numeric keys, arrays and Unicode UTF16 (0.494925ms)
+✔ P1-003 RFC8785 appendix B IEEE754 vectors (0.450642ms)
+✔ P1-003 rejects non-JSON, nonfinite, lone surrogates, cycles, sparse arrays and accessors (0.494537ms)
+✔ P1-003 rejects duplicate escaped keys, malformed JSON and overflow at ingestion (0.406483ms)
+✔ P1-003 known SHA256 and equivalent input hash, distinct payloads (0.143034ms)
+✔ P1-003 authentic host record required, exact purpose/revision/hash/identity and revocation (1.349894ms)
+✔ P1-003 MERGE requires exact attempt, diff and review bindings (0.68185ms)
+ℹ tests 47
+ℹ suites 9
+ℹ pass 46
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 220.332927
+
+✖ failing tests:
+
+test at dist/tests/unit/attempts.test.js:73:1
+✖ P1-004 rollback verifies registration/base/path, archives partial state, restores only owned fixture (12.380797ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/attempts.test.js:75:21)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 31,
+    stdout: '',
+    stderr: ''
+  }
+test_exit=1

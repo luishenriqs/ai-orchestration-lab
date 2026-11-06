@@ -1,0 +1,89 @@
+stage=P1-004 phase=red command=node --test --test-isolation=none --test-reporter=spec dist/tests/unit/attempts.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✖ P1-004 persists CREATED, rejects duplicates and preserves immutable history through valid terminal states (2.033049ms)
+✖ P1-004 rejects invalid transitions, reasons, traversal and inconsistent CREATED; blocks before start (4.299739ms)
+✖ P1-004 reconciles orphan using real process token, preserves logs and reconstructs stale projection (4.593082ms)
+✖ P1-004 detects journal tampering and leaves genuinely active process RUNNING (0.523422ms)
+✖ P1-004 rollback verifies registration/base/path, archives partial state, restores only owned fixture (0.470562ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 0
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 28.032072
+
+✖ failing tests:
+
+test at dist/tests/unit/attempts.test.js:17:1
+✖ P1-004 persists CREATED, rejects duplicates and preserves immutable history through valid terminal states (2.033049ms)
+  Error: NOT_IMPLEMENTED
+      at AttemptStore.load (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/attempts.js:7:40)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/attempts.test.js:21:32)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+
+test at dist/tests/unit/attempts.test.js:34:1
+✖ P1-004 rejects invalid transitions, reasons, traversal and inconsistent CREATED; blocks before start (4.299739ms)
+  Error: NOT_IMPLEMENTED
+      at AttemptStore.transition (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/attempts.js:8:87)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/attempts.test.js:40:27)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at dist/tests/unit/attempts.test.js:45:1
+✖ P1-004 reconciles orphan using real process token, preserves logs and reconstructs stale projection (4.593082ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(proc)
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/attempts.test.js:49:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at dist/tests/unit/attempts.test.js:62:1
+✖ P1-004 detects journal tampering and leaves genuinely active process RUNNING (0.523422ms)
+  Error: NOT_IMPLEMENTED
+      at AttemptStore.transition (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/attempts.js:8:87)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/attempts.test.js:65:11)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at dist/tests/unit/attempts.test.js:73:1
+✖ P1-004 rollback verifies registration/base/path, archives partial state, restores only owned fixture (0.470562ms)
+  Error: NOT_IMPLEMENTED
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:1:61)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/attempts.test.js:75:21)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+test_exit=1
