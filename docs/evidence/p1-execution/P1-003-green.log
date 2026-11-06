@@ -1,0 +1,7 @@
+stage=P1-003 phase=green command=node --test --test-isolation=none --test-reporter=spec dist/tests/unit/*.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+src/contracts/integrity.ts(7,16): error TS2550: Property 'isWellFormed' does not exist on type 'string'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2024' or later.
+build_exit=2

@@ -1,0 +1,75 @@
+stage=P1-003 phase=green-02 command=node --test --test-isolation=none --test-reporter=spec dist/tests/unit/*.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+▶ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls
+  ✔ resolves workspaceRoot and schemasDir deterministically independent of process.cwd() (0.800181ms)
+  ✔ loads all 7 normative schemas with Draft 2020-12 "$schema" declaration (1.743152ms)
+  ✔ fails closed when schemasDir does not exist or contractType is unknown (61.226803ms)
+  ✔ rejects non-object roots (null, undefined, primitives, arrays) and malformed JSON without unhandled exceptions (2.124993ms)
+  ✔ never mutates frozen input objects and never performs silent type coercion (0.617533ms)
+✔ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls (67.437141ms)
+▶ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02)
+  ✔ (P1) accepts valid minimal TaskContract with ias_normative_card: null and empty arrays (0.139625ms)
+  ✔ (P2) accepts valid complete TaskContract with ias_normative_card (all 18 fields, 6 statuses, and structured test_plan object) (0.386605ms)
+  ✔ (P3) accepts all 5 validation strategies, 4 risk levels, 3 executors, mode CONTROLLED, and retry_limit >= 0 (0.305014ms)
+  ✔ (N1) rejects omission of each of the 9 required top-level fields (0.3062ms)
+  ✔ (N2) rejects omission of required subfields in identity, governance, scope, validation, execution, rollback (0.540437ms)
+  ✔ (N3) rejects omission of any of the 18 fields of ias_normative_card or any of the 4 fields of test_plan (0.648023ms)
+  ✔ (N4, N5, N6) rejects incompatible schema_version, forbidden task_ready field, and additionalProperties at root or subobjects (0.356781ms)
+  ✔ (N7) rejects unknown enum values in strategy, risk_level, selected_executor, mode, and ias_normative_card.status (0.268324ms)
+  ✔ (N8, B1, B2, B3, B4) rejects invalid types, globs, absolute/traversal paths, fractional numbers, empty strings, and malformed test_plan (0.423038ms)
+✔ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02) (3.759192ms)
+▶ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03)
+  ✔ (P1, P2, P3) accepts valid PLAN_ONLY, EXECUTION (with and without optional fields), and MERGE records (1.009897ms)
+  ✔ (N1) rejects omission of any of the 10 required base fields (0.31275ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid versions, scopes, additionalProperties, hashes, and timestamps (0.183044ms)
+  ✔ (B1, B2, B3) enforces MERGE conditional required fields and forbids null/empty strings in all scopes (1.209137ms)
+✔ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03) (2.887167ms)
+▶ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05)
+  ✔ (P1, P2, P3) accepts CREATED, RUNNING with process_identity, and finished attempts with all 9 termination reasons (0.783968ms)
+  ✔ (N1) rejects omission of any of the 13 required fields (0.273808ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid states, termination_reasons, executors, additionalProperties, and dates (0.2408ms)
+  ✔ (B1, B2) enforces unidirectional finished_at -> termination_reason rule and strict process_identity constraints (0.233146ms)
+✔ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05) (1.657254ms)
+▶ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01)
+  ✔ (P1, P2) accepts valid ExecutionResult with empty or populated blockers and non-empty outcome strings (0.306611ms)
+  ✔ (N1, N2, N3, N4, B1, B2) rejects missing fields, injected properties, empty strings, and nulls (0.318854ms)
+✔ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01) (0.732617ms)
+▶ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06)
+  ✔ (P1, P2) accepts initial manifest and complete manifest with TestRunRecords and artifact_hashes (1.278068ms)
+  ✔ (N1, N2, N3, N4) rejects missing fields, non-HOST_OBSERVED origin, additionalProperties, and invalid enums (0.361615ms)
+  ✔ (B1, B2, B3) rejects malformed TestRunRecord, invalid artifact_hashes items, and empty strings in file lists (0.355266ms)
+✔ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06) (2.088335ms)
+▶ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08)
+  ✔ (P1, P2) accepts initial and populated ReviewHandoffPackage across all data classifications and sanitization statuses (0.577456ms)
+  ✔ (N1, N2, N3, N4, N5, B1, B2) rejects missing fields, invalid enums, invalid included_artifacts, and empty/null violations (0.319858ms)
+✔ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08) (0.966238ms)
+▶ 7. ReviewReport validation (P0 §16, DEC-P1-002-09)
+  ✔ (P1, P2, P3) accepts valid reports with/without findings, all 12 categories, all 4 severities, all 3 verdicts, and applicable: false with justification (1.073896ms)
+  ✔ (N1, N2, N3, N4, N5, N6) rejects missing top/finding fields, invalid verdicts/severities/categories, and additionalProperties (0.399647ms)
+  ✔ (B1, B2, B3) enforces conditional justification when applicable === false and rejects string categories or coerced booleans (0.172136ms)
+✔ 7. ReviewReport validation (P0 §16, DEC-P1-002-09) (1.732078ms)
+▶ P1-001 foundation infrastructure
+  ✔ imports compiled foundation constants and validates strict assertions (0.060068ms)
+  ✔ verifies all required laboratory directories exist in the workspace (3.255666ms)
+  ✔ verifies normative specification documents are present and non-empty (0.23147ms)
+✔ P1-001 foundation infrastructure (3.809638ms)
+✔ P1-003 RFC8785 recursive ordering, numeric keys, arrays and Unicode UTF16 (0.556482ms)
+✔ P1-003 RFC8785 appendix B IEEE754 vectors (0.315574ms)
+✔ P1-003 rejects non-JSON, nonfinite, lone surrogates, cycles, sparse arrays and accessors (0.585275ms)
+✔ P1-003 rejects duplicate escaped keys, malformed JSON and overflow at ingestion (0.755163ms)
+✔ P1-003 known SHA256 and equivalent input hash, distinct payloads (0.174927ms)
+✔ P1-003 authentic host record required, exact purpose/revision/hash/identity and revocation (1.315567ms)
+✔ P1-003 MERGE requires exact attempt, diff and review bindings (0.825006ms)
+ℹ tests 42
+ℹ suites 9
+ℹ pass 42
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 128.704479
+test_exit=0

@@ -1,0 +1,147 @@
+stage=P1-003 phase=red command=node --test --test-isolation=none --test-reporter=spec dist/tests/unit/integrity.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✖ P1-003 RFC8785 recursive ordering, numeric keys, arrays and Unicode UTF16 (1.773605ms)
+✔ P1-003 RFC8785 appendix B IEEE754 vectors (0.474001ms)
+✖ P1-003 rejects non-JSON, nonfinite, lone surrogates, cycles, sparse arrays and accessors (0.250649ms)
+✖ P1-003 rejects duplicate escaped keys, malformed JSON and overflow at ingestion (0.145129ms)
+✖ P1-003 known SHA256 and equivalent input hash, distinct payloads (2.782275ms)
+✖ P1-003 authentic host record required, exact purpose/revision/hash/identity and revocation (0.322459ms)
+✖ P1-003 MERGE requires exact attempt, diff and review bindings (0.233733ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 1
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19.183128
+
+✖ failing tests:
+
+test at dist/tests/unit/integrity.test.js:6:1
+✖ P1-003 RFC8785 recursive ordering, numeric keys, arrays and Unicode UTF16 (1.773605ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '{"b":[{"z":0,"a":1}],"a":2}'
+  - '{"a":2,"b":[{"a":1,"z":0}]}'
+       ^
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/integrity.test.js:7:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '{"b":[{"z":0,"a":1}],"a":2}',
+    expected: '{"a":2,"b":[{"a":1,"z":0}]}',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/unit/integrity.test.js:16:1
+✖ P1-003 rejects non-JSON, nonfinite, lone surrogates, cycles, sparse arrays and accessors (0.250649ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/integrity.test.js:20:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at dist/tests/unit/integrity.test.js:23:1
+✖ P1-003 rejects duplicate escaped keys, malformed JSON and overflow at ingestion (0.145129ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/integrity.test.js:25:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at dist/tests/unit/integrity.test.js:28:1
+✖ P1-003 known SHA256 and equivalent input hash, distinct payloads (2.782275ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'a1d46c3cdb4e5795c8d637f80daeb578ebb1a9a65dc1ed5f11f51794c3c89f3a'
+  - 'd3626ac30a87e6f7a6428233b3c68299976865fa5508e4267c5415c76af7a772'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/integrity.test.js:30:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'a1d46c3cdb4e5795c8d637f80daeb578ebb1a9a65dc1ed5f11f51794c3c89f3a',
+    expected: 'd3626ac30a87e6f7a6428233b3c68299976865fa5508e4267c5415c76af7a772',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/unit/integrity.test.js:33:1
+✖ P1-003 authentic host record required, exact purpose/revision/hash/identity and revocation (0.322459ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/integrity.test.js:39:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/unit/integrity.test.js:41:1
+✖ P1-003 MERGE requires exact attempt, diff and review bindings (0.233733ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/integrity.test.js:47:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+test_exit=1
