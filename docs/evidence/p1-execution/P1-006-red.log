@@ -1,0 +1,94 @@
+stage=P1-006 phase=red command=node --test --test-isolation=none --test-reporter=spec dist/tests/integration/evidence.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✖ P1-006 independently observes tracked/deleted/untracked/ignored files, forbidden scope and symlink escape (20.56656ms)
+✖ P1-006 records host RED/GREEN, manifest/diff/log hashes and safe handoff; detects falsification/tampering (14.271567ms)
+✖ P1-006 missing tests and false success remain insufficient, protected test modifications detected (41.925509ms)
+✖ P1-006 handoff rejects symlinks, mismatched hash, secret patterns and unsupported data policy (14.432089ms)
+✖ P1-006 snapshots detect content changes, file addition/removal and symlink substitution (13.761219ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 0
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 138.973147
+
+✖ failing tests:
+
+test at dist/tests/integration/evidence.test.js:21:1
+✖ P1-006 independently observes tracked/deleted/untracked/ignored files, forbidden scope and symlink escape (20.56656ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(observation.files.includes('protected.txt'))
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:29:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at dist/tests/integration/evidence.test.js:36:1
+✖ P1-006 records host RED/GREEN, manifest/diff/log hashes and safe handoff; detects falsification/tampering (14.271567ms)
+  Error: NOT_IMPLEMENTED
+      at observeTest (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/evidence/collector.js:2:75)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:38:23)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at dist/tests/integration/evidence.test.js:51:1
+✖ P1-006 missing tests and false success remain insufficient, protected test modifications detected (41.925509ms)
+  Error: NOT_IMPLEMENTED
+      at collectEvidence (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/evidence/collector.js:3:100)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:54:15)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at dist/tests/integration/evidence.test.js:59:1
+✖ P1-006 handoff rejects symlinks, mismatched hash, secret patterns and unsupported data policy (14.432089ms)
+  Error: NOT_IMPLEMENTED
+      at observeTest (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/evidence/collector.js:2:75)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:61:23)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at dist/tests/integration/evidence.test.js:73:1
+✖ P1-006 snapshots detect content changes, file addition/removal and symlink substitution (13.761219ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to: ''
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:78:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: '',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+test_exit=1
