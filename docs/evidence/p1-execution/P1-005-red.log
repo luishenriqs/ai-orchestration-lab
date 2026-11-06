@@ -1,0 +1,72 @@
+stage=P1-005 phase=red command=node --test --test-isolation=none --test-reporter=spec dist/tests/integration/execution.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✖ P1-005 preventive isolation denies protected write/chmod/creation/removal and preserves sentinel (18.373989ms)
+✖ P1-005 RED assertion is legitimate, separate GREEN invocation preserves test bytes (13.27947ms)
+✖ P1-005 all ten synthetic behaviors run in exclusive fixtures; negative operations prevented (13.37282ms)
+✖ P1-005 process failure, ENOENT, bounded output and timeout/interruption reap process groups (0.873855ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80.090433
+
+✖ failing tests:
+
+test at dist/tests/integration/execution.test.js:11:1
+✖ P1-005 preventive isolation denies protected write/chmod/creation/removal and preserves sentinel (18.373989ms)
+  Error: NOT_IMPLEMENTED
+      at probeIsolation (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/synthetic.js:5:56)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:13:25)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+
+test at dist/tests/integration/execution.test.js:21:1
+✖ P1-005 RED assertion is legitimate, separate GREEN invocation preserves test bytes (13.27947ms)
+  Error: NOT_IMPLEMENTED
+      at runFixtureTest (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/synthetic.js:4:56)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:25:23)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at dist/tests/integration/execution.test.js:34:1
+✖ P1-005 all ten synthetic behaviors run in exclusive fixtures; negative operations prevented (13.37282ms)
+  Error: NOT_IMPLEMENTED
+      at executeSynthetic (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/synthetic.js:3:69)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:37:35)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at dist/tests/integration/execution.test.js:53:1
+✖ P1-005 process failure, ENOENT, bounded output and timeout/interruption reap process groups (0.873855ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 7
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:56:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 7,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+test_exit=1
