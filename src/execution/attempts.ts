@@ -6,7 +6,7 @@ import type { ExecutionAttempt, ExecutionAttemptState, ProcessIdentity, Terminat
 import { identifier, safePath, writeNew, atomicJson, readJson } from './host.js';
 interface Event {sequence:number;previous:string|null;attempt:ExecutionAttempt;sha256:string}
 const transitions: Record<ExecutionAttemptState,readonly ExecutionAttemptState[]>={CREATED:['RUNNING','BLOCKED'],RUNNING:['COMPLETED','FAILED','INTERRUPTED'],COMPLETED:[],FAILED:[],INTERRUPTED:[],BLOCKED:[]};
-function consistent(a: ExecutionAttempt): void {
+export function assertAttemptConsistent(a: ExecutionAttempt): void {
   if(!validateExecutionAttempt(a).valid) throw Error('INVALID_ATTEMPT');
   const terminal=!['CREATED','RUNNING'].includes(a.state);
   if(terminal !== (a.finished_at!==null && a.termination_reason!==null)) throw Error('INCONSISTENT_TERMINATION');
@@ -23,7 +23,7 @@ export class AttemptStore {
   constructor(root: string) {fs.mkdirSync(root,{recursive:true});this.root=fs.realpathSync(root);}
   private dir(execution:string,attempt:string):string {return safePath(this.root,`${identifier(execution)}/attempts/${identifier(attempt)}`,false);}
   create(attempt:ExecutionAttempt):void {
-    consistent(attempt);if(attempt.state!=='CREATED') throw Error('INITIAL_STATE_REQUIRED');
+    assertAttemptConsistent(attempt);if(attempt.state!=='CREATED') throw Error('INITIAL_STATE_REQUIRED');
     const dir=this.dir(attempt.execution_id,attempt.attempt_id);fs.mkdirSync(path.dirname(dir),{recursive:true});fs.mkdirSync(dir);
     fs.mkdirSync(path.join(dir,'events'));this.append(dir,attempt,0,null);
   }
@@ -39,7 +39,7 @@ export class AttemptStore {
       if(name!==String(sequence).padStart(6,'0')+'.json') throw Error('JOURNAL_SEQUENCE');
       const event=readJson(safePath(dir,'events/'+name)) as Event;
       if(event.sequence!==sequence||event.previous!==previous||event.sha256!==canonicalHash({sequence:event.sequence,previous:event.previous,attempt:event.attempt})) throw Error('JOURNAL_INTEGRITY');
-      consistent(event.attempt);
+      assertAttemptConsistent(event.attempt);
       if(event.attempt.execution_id!==execution||event.attempt.attempt_id!==attempt) throw Error('JOURNAL_IDENTITY');
       if(!prior && event.attempt.state!=='CREATED') throw Error('INITIAL_STATE_REQUIRED');
       if(prior) {
@@ -60,7 +60,7 @@ export class AttemptStore {
       if(!transitions[a.state].includes(state)) throw Error('INVALID_TRANSITION');
       const now=new Date().toISOString();
       const next:ExecutionAttempt={...a,state,started_at:state==='RUNNING'?now:a.started_at,process_identity:state==='RUNNING'?process:a.process_identity,finished_at:state==='RUNNING'?null:now,termination_reason:reason};
-      consistent(next);this.append(dir,next,events.length,last.sha256);return next;
+      assertAttemptConsistent(next);this.append(dir,next,events.length,last.sha256);return next;
     } finally {fs.closeSync(fd);fs.unlinkSync(lock);}
   }
   reconcile(execution:string,attempt:string):ExecutionAttempt {

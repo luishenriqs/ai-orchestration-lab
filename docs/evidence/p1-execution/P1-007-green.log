@@ -1,0 +1,91 @@
+stage=P1-007 phase=green command=node --test --test-isolation=none --test-reporter=spec dist/tests/**/*.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✔ P1-006 independently observes tracked/deleted/untracked/ignored files, forbidden scope and symlink escape (38.717621ms)
+✔ P1-006 records host RED/GREEN, manifest/diff/log hashes and safe handoff; detects falsification/tampering (242.72113ms)
+✔ P1-006 missing tests and false success remain insufficient, protected test modifications detected (85.926674ms)
+✔ P1-006 handoff rejects symlinks, mismatched hash, secret patterns and unsupported data policy (148.396816ms)
+✔ P1-006 snapshots detect content changes, file addition/removal and symlink substitution (14.802091ms)
+✔ P1-005 preventive isolation denies protected write/chmod/creation/removal and preserves sentinel (48.780538ms)
+✔ P1-005 RED assertion is legitimate, separate GREEN invocation preserves test bytes (89.816253ms)
+✔ P1-005 all ten synthetic behaviors run in exclusive fixtures; negative operations prevented (1474.347332ms)
+✔ P1-005 process failure, ENOENT, bounded output and timeout/interruption reap process groups (235.177607ms)
+✔ P1-007 TASK-READY rejects every false prerequisite, invalid policies and missing approval (113.490874ms)
+✔ P1-007 gates require observed evidence and current trusted review plus exact MERGE authorization (394.52512ms)
+✔ P1-004 persists CREATED, rejects duplicates and preserves immutable history through valid terminal states (13.32586ms)
+✔ P1-004 rejects invalid transitions, reasons, traversal and inconsistent CREATED; blocks before start (2.649544ms)
+✔ P1-004 reconciles orphan using real process token, preserves logs and reconstructs stale projection (4.571561ms)
+✔ P1-004 detects journal tampering and leaves genuinely active process RUNNING (2.287571ms)
+✔ P1-004 rollback verifies registration/base/path, archives partial state, restores only owned fixture (41.967019ms)
+▶ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls
+  ✔ resolves workspaceRoot and schemasDir deterministically independent of process.cwd() (0.218862ms)
+  ✔ loads all 7 normative schemas with Draft 2020-12 "$schema" declaration (0.837943ms)
+  ✔ fails closed when schemasDir does not exist or contractType is unknown (1.260734ms)
+  ✔ rejects non-object roots (null, undefined, primitives, arrays) and malformed JSON without unhandled exceptions (0.284409ms)
+  ✔ never mutates frozen input objects and never performs silent type coercion (0.286388ms)
+✔ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls (3.472534ms)
+▶ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02)
+  ✔ (P1) accepts valid minimal TaskContract with ias_normative_card: null and empty arrays (0.174201ms)
+  ✔ (P2) accepts valid complete TaskContract with ias_normative_card (all 18 fields, 6 statuses, and structured test_plan object) (0.407918ms)
+  ✔ (P3) accepts all 5 validation strategies, 4 risk levels, 3 executors, mode CONTROLLED, and retry_limit >= 0 (0.239898ms)
+  ✔ (N1) rejects omission of each of the 9 required top-level fields (0.282737ms)
+  ✔ (N2) rejects omission of required subfields in identity, governance, scope, validation, execution, rollback (0.938849ms)
+  ✔ (N3) rejects omission of any of the 18 fields of ias_normative_card or any of the 4 fields of test_plan (0.576866ms)
+  ✔ (N4, N5, N6) rejects incompatible schema_version, forbidden task_ready field, and additionalProperties at root or subobjects (0.26522ms)
+  ✔ (N7) rejects unknown enum values in strategy, risk_level, selected_executor, mode, and ias_normative_card.status (0.1693ms)
+  ✔ (N8, B1, B2, B3, B4) rejects invalid types, globs, absolute/traversal paths, fractional numbers, empty strings, and malformed test_plan (0.591665ms)
+✔ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02) (4.439201ms)
+▶ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03)
+  ✔ (P1, P2, P3) accepts valid PLAN_ONLY, EXECUTION (with and without optional fields), and MERGE records (0.198474ms)
+  ✔ (N1) rejects omission of any of the 10 required base fields (0.281097ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid versions, scopes, additionalProperties, hashes, and timestamps (0.139956ms)
+  ✔ (B1, B2, B3) enforces MERGE conditional required fields and forbids null/empty strings in all scopes (0.392966ms)
+✔ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03) (1.332515ms)
+▶ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05)
+  ✔ (P1, P2, P3) accepts CREATED, RUNNING with process_identity, and finished attempts with all 9 termination reasons (0.241746ms)
+  ✔ (N1) rejects omission of any of the 13 required fields (0.311507ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid states, termination_reasons, executors, additionalProperties, and dates (0.198084ms)
+  ✔ (B1, B2) enforces unidirectional finished_at -> termination_reason rule and strict process_identity constraints (0.191384ms)
+✔ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05) (1.227238ms)
+▶ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01)
+  ✔ (P1, P2) accepts valid ExecutionResult with empty or populated blockers and non-empty outcome strings (0.109088ms)
+  ✔ (N1, N2, N3, N4, B1, B2) rejects missing fields, injected properties, empty strings, and nulls (0.25404ms)
+✔ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01) (0.523984ms)
+▶ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06)
+  ✔ (P1, P2) accepts initial manifest and complete manifest with TestRunRecords and artifact_hashes (0.209491ms)
+  ✔ (N1, N2, N3, N4) rejects missing fields, non-HOST_OBSERVED origin, additionalProperties, and invalid enums (0.270316ms)
+  ✔ (B1, B2, B3) rejects malformed TestRunRecord, invalid artifact_hashes items, and empty strings in file lists (0.370552ms)
+✔ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06) (1.123714ms)
+▶ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08)
+  ✔ (P1, P2) accepts initial and populated ReviewHandoffPackage across all data classifications and sanitization statuses (0.190274ms)
+  ✔ (N1, N2, N3, N4, N5, B1, B2) rejects missing fields, invalid enums, invalid included_artifacts, and empty/null violations (0.398679ms)
+✔ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08) (0.744885ms)
+▶ 7. ReviewReport validation (P0 §16, DEC-P1-002-09)
+  ✔ (P1, P2, P3) accepts valid reports with/without findings, all 12 categories, all 4 severities, all 3 verdicts, and applicable: false with justification (0.402789ms)
+  ✔ (N1, N2, N3, N4, N5, N6) rejects missing top/finding fields, invalid verdicts/severities/categories, and additionalProperties (0.650813ms)
+  ✔ (B1, B2, B3) enforces conditional justification when applicable === false and rejects string categories or coerced booleans (0.225576ms)
+✔ 7. ReviewReport validation (P0 §16, DEC-P1-002-09) (1.550776ms)
+▶ P1-001 foundation infrastructure
+  ✔ imports compiled foundation constants and validates strict assertions (0.081643ms)
+  ✔ verifies all required laboratory directories exist in the workspace (1.38445ms)
+  ✔ verifies normative specification documents are present and non-empty (0.237233ms)
+✔ P1-001 foundation infrastructure (1.995883ms)
+✔ P1-003 RFC8785 recursive ordering, numeric keys, arrays and Unicode UTF16 (0.199884ms)
+✔ P1-003 RFC8785 appendix B IEEE754 vectors (0.161334ms)
+✔ P1-003 rejects non-JSON, nonfinite, lone surrogates, cycles, sparse arrays and accessors (0.276112ms)
+✔ P1-003 rejects duplicate escaped keys, malformed JSON and overflow at ingestion (0.183033ms)
+✔ P1-003 known SHA256 and equivalent input hash, distinct payloads (0.149472ms)
+✔ P1-003 authentic host record required, exact purpose/revision/hash/identity and revocation (0.732312ms)
+✔ P1-003 MERGE requires exact attempt, diff and review bindings (0.405592ms)
+ℹ tests 58
+ℹ suites 9
+ℹ pass 58
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3018.667687
+test_exit=0

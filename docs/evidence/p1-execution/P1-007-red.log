@@ -1,0 +1,53 @@
+stage=P1-007 phase=red command=node --test --test-isolation=none --test-reporter=spec dist/tests/integration/gates.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✖ P1-007 TASK-READY rejects every false prerequisite, invalid policies and missing approval (17.172195ms)
+✖ P1-007 gates require observed evidence and current trusted review plus exact MERGE authorization (177.359996ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 232.791588
+
+✖ failing tests:
+
+test at dist/tests/integration/gates.test.js:17:1
+✖ P1-007 TASK-READY rejects every false prerequisite, invalid policies and missing approval (17.172195ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/gates.test.js:21:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/integration/gates.test.js:26:1
+✖ P1-007 gates require observed evidence and current trusted review plus exact MERGE authorization (177.359996ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/gates.test.js:46:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+test_exit=1

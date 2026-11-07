@@ -1,0 +1,18 @@
+import { it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { executeAttempt, serialExecution } from '../../src/execution/adapter.js';
+import { createFixture } from '../../src/execution/fixtures.js';
+import { canonicalHash } from '../../src/contracts/integrity.js';
+import { trustApproval } from '../../src/governance/approval.js';
+import { task, approval } from '../helpers/contracts.js';
+import { resolveWorkspaceRoot } from '../../src/contracts/schema-loader.js';
+it('P1-007 adapter executes full observed flow and rejects overlapping execution',async()=>{
+  const f=createFixture('adapter-'+randomUUID(),'A');const base=task(f.workspace,f.base_commit);const c={...base,identity:{...base.identity,execution_id:f.execution_id}};const ap=approval(canonicalHash(c),{execution_id:f.execution_id});
+  const outcome=await executeAttempt(f,c,ap,{trusted:[trustApproval(ap)],environment_authorized:true,data_classification:'SYNTHETIC_LAB',required_dependencies:[],completed_dependencies:[],conflict:false},'SYN-001');
+  assert.equal(outcome.attempt.state,'COMPLETED');assert.deepEqual(outcome.validation?.reasons,[]);assert.equal(outcome.validation?.allowed,true);
+  assert.ok(fs.existsSync(path.join(outcome.evidence_dir,'isolation-proof.json')));assert.ok(fs.existsSync(path.join(outcome.evidence_dir,'governance-integrity.json')));
+  const runs=path.join(resolveWorkspaceRoot(),'runs');await serialExecution(runs,async()=>{await assert.rejects(()=>serialExecution(runs,async()=>0),/OPERATIONAL_CONFLICT/);});
+});
