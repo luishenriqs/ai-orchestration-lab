@@ -1,0 +1,9 @@
+{
+  "gate": "ValidationGate",
+  "allowed": true,
+  "reasons": [],
+  "decided_at": "2026-11-07T00:37:24.840Z",
+  "execution_id": "P1-008-08-f56851b7-35ab-41ce-b7bb-fbbd9fc7911b",
+  "attempt_id": "A",
+  "contract_sha256": "f77a9c5f37e2a8ab5ceb65411b82e569e9ddbd4a5f31a2c0a59628c4901e2a93"
+}

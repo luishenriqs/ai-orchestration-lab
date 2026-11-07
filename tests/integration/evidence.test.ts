@@ -11,34 +11,75 @@ import { resolveWorkspaceRoot } from '../../src/contracts/schema-loader.js';
 import { canonicalHash } from '../../src/contracts/integrity.js';
 import { task } from '../helpers/contracts.js';
 import type { ExecutionAttempt } from '../../src/contracts/types.js';
-export function evidenceSetup(){
-  const f=createFixture('evidence-'+randomUUID(),'A');const c=task(f.workspace,f.base_commit);const dir=path.join(resolveWorkspaceRoot(),'runs',f.execution_id);fs.mkdirSync(dir);
-  const a:ExecutionAttempt={schema_version:'0.3-p0',execution_id:c.identity.execution_id,attempt_id:f.attempt_id,approval_id:'SYN',approved_contract_sha256:canonicalHash(c),executor:'synthetic',state:'CREATED',started_at:null,finished_at:null,termination_reason:null,base_commit:f.base_commit,workspace_root:f.workspace,process_identity:null};return {f,c,a,dir};
+export function evidenceSetup() {
+    const f = createFixture('evidence-' + randomUUID(), 'A');
+    const base = task(f.workspace, f.base_commit);
+    const c = { ...base, identity: { ...base.identity, execution_id: f.execution_id } };
+    const dir = path.join(resolveWorkspaceRoot(), 'runs', f.execution_id);
+    fs.mkdirSync(dir);
+    const a: ExecutionAttempt = { schema_version: '0.3-p0', execution_id: c.identity.execution_id, attempt_id: f.attempt_id, approval_id: 'SYN', approved_contract_sha256: canonicalHash(c), executor: 'synthetic', state: 'CREATED', started_at: null, finished_at: null, termination_reason: null, base_commit: f.base_commit, workspace_root: f.workspace, process_identity: null };
+    return { f, c, a, dir };
 }
-it('P1-006 independently observes tracked/deleted/untracked/ignored files, forbidden scope and symlink escape',()=>{
-  const {f,c}=evidenceSetup();fs.writeFileSync(path.join(f.workspace,'src/sum.cjs'),'changed');fs.unlinkSync(path.join(f.workspace,'protected.txt'));fs.writeFileSync(path.join(f.workspace,'untracked.txt'),'x');fs.writeFileSync(path.join(f.workspace,'.gitignore'),'ignored.txt');fs.writeFileSync(path.join(f.workspace,'ignored.txt'),'ignored');
-  const observation=observeWorkspace(f,c);assert.ok(observation.files.includes('protected.txt'));assert.ok(observation.files.includes('untracked.txt'));assert.ok(observation.files.includes('ignored.txt'));assert.ok(observation.unexpected.includes('protected.txt'));
-  fs.symlinkSync('/outside-synthetic-target',path.join(f.workspace,'escape'));assert.throws(()=>observeWorkspace(f,c),/SYMLINK/);
+it('P1-006 independently observes tracked/deleted/untracked/ignored files, forbidden scope and symlink escape', () => {
+    const { f, c } = evidenceSetup();
+    fs.writeFileSync(path.join(f.workspace, 'src/sum.cjs'), 'changed');
+    fs.unlinkSync(path.join(f.workspace, 'protected.txt'));
+    fs.writeFileSync(path.join(f.workspace, 'untracked.txt'), 'x');
+    fs.writeFileSync(path.join(f.workspace, '.gitignore'), 'ignored.txt');
+    fs.writeFileSync(path.join(f.workspace, 'ignored.txt'), 'ignored');
+    const observation = observeWorkspace(f, c);
+    assert.ok(observation.files.includes('protected.txt'));
+    assert.ok(observation.files.includes('untracked.txt'));
+    assert.ok(observation.files.includes('ignored.txt'));
+    assert.ok(observation.unexpected.includes('protected.txt'));
+    fs.symlinkSync('/outside-synthetic-target', path.join(f.workspace, 'escape'));
+    assert.throws(() => observeWorkspace(f, c), /SYMLINK/);
 });
-it('P1-006 records host RED/GREEN, manifest/diff/log hashes and safe handoff; detects falsification/tampering',async()=>{
-  const {f,c,a,dir}=evidenceSetup();const red=await observeTest(f,dir,'red');assert.equal(red.observed_outcome,'FAIL');await executeSynthetic(f,'SYN-001');const green=await observeTest(f,dir,'green');
-  const m=collectEvidence(f,c,a,dir,red,green);assert.deepEqual(verifyEvidence(f,c,a,m,dir),[]);
-  const h=createHandoff(c,a,m,dir);assert.deepEqual(verifyHandoff(f,c,a,m,h,dir),[]);
-  assert.ok(verifyHandoff(f,c,a,m,{...h,workspace_context_id:'other'},dir).includes('HANDOFF_CONTEXT'));
-  assert.ok(verifyEvidence(f,c,a,{...m,attempt_id:'other'},dir).includes('EVIDENCE_BINDING'));
-  fs.appendFileSync(path.join(dir,green.log_path),'tamper');assert.ok(verifyEvidence(f,c,a,m,dir).includes('ARTIFACT_INTEGRITY'));
+it('P1-006 records host RED/GREEN, manifest/diff/log hashes and safe handoff; detects falsification/tampering', async () => {
+    const { f, c, a, dir } = evidenceSetup();
+    const red = await observeTest(f, dir, 'red');
+    assert.equal(red.observed_outcome, 'FAIL');
+    await executeSynthetic(f, 'SYN-001');
+    const green = await observeTest(f, dir, 'green');
+    const m = collectEvidence(f, c, a, dir, red, green);
+    assert.deepEqual(verifyEvidence(f, c, a, m, dir), []);
+    const h = createHandoff(c, a, m, dir);
+    assert.deepEqual(verifyHandoff(f, c, a, m, h, dir), []);
+    assert.ok(verifyHandoff(f, c, a, m, { ...h, workspace_context_id: 'other' }, dir).includes('HANDOFF_CONTEXT'));
+    assert.ok(verifyEvidence(f, c, a, { ...m, attempt_id: 'other' }, dir).includes('EVIDENCE_BINDING'));
+    fs.appendFileSync(path.join(dir, green.log_path), 'tamper');
+    assert.ok(verifyEvidence(f, c, a, m, dir).includes('ARTIFACT_INTEGRITY'));
 });
-it('P1-006 missing tests and false success remain insufficient, protected test modifications detected',async()=>{
-  const {f,c,a,dir}=evidenceSetup();await executeSynthetic(f,'SYN-005');const m=collectEvidence(f,c,a,dir,null,null);assert.ok(verifyEvidence(f,c,a,m,dir).includes('MISSING_GREEN'));
-  fs.writeFileSync(path.join(f.workspace,'tests/sum.cjs'),'console.log("pass")');assert.equal(observeWorkspace(f,c).tests_protected,false);
+it('P1-006 missing tests and false success remain insufficient, protected test modifications detected', async () => {
+    const { f, c, a, dir } = evidenceSetup();
+    await executeSynthetic(f, 'SYN-005');
+    const m = collectEvidence(f, c, a, dir, null, null);
+    assert.ok(verifyEvidence(f, c, a, m, dir).includes('MISSING_GREEN'));
+    fs.writeFileSync(path.join(f.workspace, 'tests/sum.cjs'), 'console.log("pass")');
+    assert.equal(observeWorkspace(f, c).tests_protected, false);
 });
-it('P1-006 handoff rejects symlinks, mismatched hash, secret patterns and unsupported data policy',async()=>{
-  const {f,c,a,dir}=evidenceSetup();const red=await observeTest(f,dir,'red');await executeSynthetic(f,'SYN-001');const green=await observeTest(f,dir,'green');const m=collectEvidence(f,c,a,dir,red,green);const h=createHandoff(c,a,m,dir);
-  assert.ok(verifyHandoff(f,c,a,m,{...h,data_classification:'CLIENT_CONFIDENTIAL'},dir).length);
-  assert.ok(verifyHandoff(f,c,a,m,{...h,included_artifacts:[{path:'../escape',sha256:'a'.repeat(64)}]},dir).length);
-  fs.writeFileSync(path.join(dir,'secret.txt'),'token=sk-'+ 'x'.repeat(32));assert.ok(secretPatterns(fs.readFileSync(path.join(dir,'secret.txt'),'utf8')).length);
-  fs.symlinkSync('/synthetic-outside',path.join(dir,'link'));assert.ok(verifyHandoff(f,c,a,m,{...h,included_artifacts:[{path:'link',sha256:'a'.repeat(64)}]},dir).length);
+it('P1-006 handoff rejects symlinks, mismatched hash, secret patterns and unsupported data policy', async () => {
+    const { f, c, a, dir } = evidenceSetup();
+    const red = await observeTest(f, dir, 'red');
+    await executeSynthetic(f, 'SYN-001');
+    const green = await observeTest(f, dir, 'green');
+    const m = collectEvidence(f, c, a, dir, red, green);
+    const h = createHandoff(c, a, m, dir);
+    assert.ok(verifyHandoff(f, c, a, m, { ...h, data_classification: 'CLIENT_CONFIDENTIAL' }, dir).length);
+    assert.ok(verifyHandoff(f, c, a, m, { ...h, included_artifacts: [{ path: '../escape', sha256: 'a'.repeat(64) }] }, dir).length);
+    fs.writeFileSync(path.join(dir, 'secret.txt'), 'token=sk-' + 'x'.repeat(32));
+    assert.ok(secretPatterns(fs.readFileSync(path.join(dir, 'secret.txt'), 'utf8')).length);
+    fs.symlinkSync('/synthetic-outside', path.join(dir, 'link'));
+    assert.ok(verifyHandoff(f, c, a, m, { ...h, included_artifacts: [{ path: 'link', sha256: 'a'.repeat(64) }] }, dir).length);
 });
-it('P1-006 snapshots detect content changes, file addition/removal and symlink substitution',()=>{
-  const {dir}=evidenceSetup();fs.writeFileSync(path.join(dir,'a'),'x');const before=snapshotTree(dir);fs.writeFileSync(path.join(dir,'b'),'y');assert.notEqual(snapshotTree(dir),before);fs.unlinkSync(path.join(dir,'b'));assert.equal(snapshotTree(dir),before);fs.writeFileSync(path.join(dir,'a'),'z');assert.notEqual(snapshotTree(dir),before);
+it('P1-006 snapshots detect content changes, file addition/removal and symlink substitution', () => {
+    const { dir } = evidenceSetup();
+    fs.writeFileSync(path.join(dir, 'a'), 'x');
+    const before = snapshotTree(dir);
+    fs.writeFileSync(path.join(dir, 'b'), 'y');
+    assert.notEqual(snapshotTree(dir), before);
+    fs.unlinkSync(path.join(dir, 'b'));
+    assert.equal(snapshotTree(dir), before);
+    fs.writeFileSync(path.join(dir, 'a'), 'z');
+    assert.notEqual(snapshotTree(dir), before);
 });

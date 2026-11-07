@@ -1,0 +1,9 @@
+{
+  "schema_version": "0.3-p0",
+  "execution_id": "P1-008-08-67ddd801-1ceb-4872-8423-5e8988b9064a",
+  "attempt_id": "A",
+  "executor": "synthetic",
+  "agent_declared_outcome": "completed",
+  "agent_summary": "completed",
+  "agent_reported_blockers": []
+}

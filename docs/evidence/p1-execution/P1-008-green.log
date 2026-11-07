@@ -1,0 +1,7 @@
+stage=P1-008 phase=green command=node --test --test-isolation=none --test-reporter=spec dist/tests/scenarios/p1.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+src/scenarios/p1.ts(17,74): error TS6133: 'snapshotTree' is declared but its value is never read.
+build_exit=2

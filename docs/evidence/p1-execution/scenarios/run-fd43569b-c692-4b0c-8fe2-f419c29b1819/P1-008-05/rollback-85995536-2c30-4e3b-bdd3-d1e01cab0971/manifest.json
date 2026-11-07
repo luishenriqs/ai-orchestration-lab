@@ -1,0 +1,27 @@
+{
+  "fixture": {
+    "execution_id": "P1-008-05-133e64c1-6b5e-4a72-97b7-24394b371639",
+    "attempt_id": "A",
+    "workspace": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-05-133e64c1-6b5e-4a72-97b7-24394b371639/A/workspace",
+    "base_commit": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "record_path": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-05-133e64c1-6b5e-4a72-97b7-24394b371639/A/fixture.json"
+  },
+  "artifacts": [
+    {
+      "path": "protected.txt",
+      "sha256": "bf03da7333c0dbdd9b287ecb9901a8c6434da678e7d3c0406e9e748c1f55869a",
+      "deleted": false
+    },
+    {
+      "path": "src/sum.cjs",
+      "sha256": "4b8f91a723fe70b781d12cfc5b5d4d7dac7361866f4d4b528e9785550a06eab7",
+      "deleted": false
+    },
+    {
+      "path": "tests/sum.cjs",
+      "sha256": "d1f9206a3af7aabeafa92b06cadeb90157ac9acb7f2a9a55ef6b14210d5ea9c9",
+      "deleted": false
+    }
+  ],
+  "diff": "diff --git a/src/sum.cjs b/src/sum.cjs\nindex 2f07f5a..3216e60 100644\n--- a/src/sum.cjs\n+++ b/src/sum.cjs\n@@ -1 +1,2 @@\n-module.exports=(a,b)=>0;\n+// partial change\n+module.exports=()=>0;\n\\ No newline at end of file\n"
+}

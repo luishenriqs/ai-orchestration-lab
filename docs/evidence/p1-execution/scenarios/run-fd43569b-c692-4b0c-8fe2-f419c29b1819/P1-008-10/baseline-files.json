@@ -1,0 +1,5 @@
+{
+  "src/sum.cjs": "module.exports=(a,b)=>0;\n",
+  "tests/sum.cjs": "const assert=require('node:assert/strict');const sum=require('../src/sum.cjs');assert.equal(sum(1,2),3,'SYN_EXPECT_SUM_3');assert.equal(sum(0,0),0);console.log('SYN_TEST_PASS');\n",
+  "protected.txt": "SYNTHETIC_PROTECTED\n"
+}

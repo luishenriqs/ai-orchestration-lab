@@ -1,0 +1,17 @@
+{
+  "workspace": {
+    "files": [
+      "protected.txt"
+    ],
+    "unexpected": [
+      "protected.txt"
+    ],
+    "diff": "{\"changes\":[{\"content\":\"SE9TVF9JTkpFQ1RFRF9PVVRfT0ZfU0NPUEU=\",\"deleted\":false,\"path\":\"protected.txt\"}],\"tracked_diff\":\"diff --git a/protected.txt b/protected.txt\\nindex d13d287..e156dc4 100644\\n--- a/protected.txt\\n+++ b/protected.txt\\n@@ -1 +1 @@\\n-SYNTHETIC_PROTECTED\\n+HOST_INJECTED_OUT_OF_SCOPE\\n\\\\ No newline at end of file\\n\"}",
+    "tests_protected": true
+  },
+  "reasons": [
+    "WORKSPACE_CHANGED",
+    "SCOPE_VIOLATION",
+    "MISSING_GREEN"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "exit_code": 1,
+  "signal": null,
+  "stdout": "",
+  "stderr": "node:fs:2482\n    return binding.writeFileUtf8(\n                   ^\n\nError: EROFS: read-only file system, open 'protected.txt'\n    at Object.writeFileSync (node:fs:2482:20)\n    at [eval]:1:20\n    at runScriptInThisContext (node:internal/vm:219:10)\n    at node:internal/process/execution:451:12\n    at [eval]-wrapper:6:24\n    at runScriptInContext (node:internal/process/execution:449:60)\n    at evalFunction (node:internal/process/execution:283:30)\n    at evalTypeScript (node:internal/process/execution:295:3)\n    at node:internal/main/eval_string:71:3 {\n  errno: -30,\n  code: 'EROFS',\n  syscall: 'open',\n  path: 'protected.txt'\n}\n\nNode.js v24.22.2\n",
+  "started_at": "2026-11-07T00:37:23.772Z",
+  "duration_ms": 29,
+  "termination_reason": "PROCESS_FAILURE",
+  "process_identity": {
+    "pid": 93751,
+    "process_start_token": "1dc24404-8d19-40aa-b5d9-46c87291a110:2023547",
+    "executable": "/usr/bin/bwrap"
+  },
+  "truncated": false
+}

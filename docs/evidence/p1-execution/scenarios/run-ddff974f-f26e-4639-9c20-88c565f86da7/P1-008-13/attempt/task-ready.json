@@ -1,0 +1,9 @@
+{
+  "gate": "TASK-READY",
+  "allowed": true,
+  "reasons": [],
+  "decided_at": "2026-11-07T00:37:25.496Z",
+  "execution_id": "P1-008-13-31fb6c6e-c423-4fdd-b25e-848c514bd957",
+  "attempt_id": "A",
+  "contract_sha256": "884d2db54b10ce2a22720538939b3352929abb081b343d9a9d38b73ec2165575"
+}

@@ -1,0 +1,68 @@
+{
+  "official_number": 2,
+  "identifier": "P1-008-02",
+  "objective": "Aprovação inexistente.",
+  "initial_conditions": "SYNTHETIC_LAB; independent Git fixture; serial host; zero retry; synthetic approval/review inputs only",
+  "procedure": [
+    "Create independent registered Git fixture with deterministic base; enroll explicitly synthetic host authorization",
+    "Remove execution approval",
+    "Run serial adapter (SYN-001), host TASK-READY/RED/executor/GREEN/collection/handoff/gates"
+  ],
+  "expected": "Reject invalid continuation with preserved evidence",
+  "observed": {
+    "state": "BLOCKED",
+    "task_ready": {
+      "gate": "TASK-READY",
+      "allowed": false,
+      "reasons": [
+        "INVALID_APPROVAL",
+        "ATTEMPT_BINDING"
+      ],
+      "decided_at": "2026-11-07T00:37:23.484Z",
+      "execution_id": "P1-008-02-85b443d6-fcaf-4cd8-8837-79069c653a10",
+      "attempt_id": "A",
+      "contract_sha256": "3f2abc54f40e80a3fd299f6805cfcf1861f89d6bc9154467534ca7e378f071b0"
+    },
+    "validation": null
+  },
+  "status": "PASS",
+  "evidence_directory": "/home/luishenriqs/projects/ai-orchestration-lab/docs/evidence/p1-execution/scenarios/run-ddff974f-f26e-4639-9c20-88c565f86da7/P1-008-02",
+  "artifacts": [
+    {
+      "path": "attempt/approval.json",
+      "sha256": "38e0b9de817f645c4bec37c0d4a3e58baecccb040f5718dc069a72c7385a0bed"
+    },
+    {
+      "path": "attempt/attempt.json",
+      "sha256": "e138b7b3bfcdf24c0b4457075f9096479165ed0845b318077d0b0ec503deed70"
+    },
+    {
+      "path": "attempt/contract.json",
+      "sha256": "7838f19fbd97d84a9949fef460f5d689ff1f4e50ec1bb14e44007bbfc23dc4b2"
+    },
+    {
+      "path": "attempt/events/000000.json",
+      "sha256": "0ae4b8fcc47df5590e325ad508868d1b9d1601427b18709ab4e91b2508f31909"
+    },
+    {
+      "path": "attempt/events/000001.json",
+      "sha256": "627301ab7138d007ab2aefb54a151a48179c1dd6fe12e3b05314a0be81ac066b"
+    },
+    {
+      "path": "attempt/host-policy.json",
+      "sha256": "e2742924c0ea2a15544debedf59ada24a2eec6af6e4e1ad9cd72231fa0b30ae9"
+    },
+    {
+      "path": "attempt/task-ready.json",
+      "sha256": "8b4ec7bf3185e0e66cb936f2da097b7e501c405309ca06ddb49df503464d093c"
+    },
+    {
+      "path": "baseline-files.json",
+      "sha256": "46e39ec41699421b6c5dcd266d0f6de8bd6b8f5f27dd6ef427ec372e8362fab6"
+    },
+    {
+      "path": "fixture-record.json",
+      "sha256": "adb05a93b0091f323ba203837efda02bfef37bdc370df526515609f5ec4e6990"
+    }
+  ]
+}

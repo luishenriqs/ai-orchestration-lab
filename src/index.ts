@@ -29,3 +29,14 @@ export const NORMATIVE_SPECIFICATION_FILES: readonly string[] = Object.freeze([
 export * from './contracts/types.js';
 export * from './contracts/schema-loader.js';
 export * from './contracts/validator.js';
+
+export * from './contracts/integrity.js';
+export * from './governance/approval.js';
+export * from './governance/gates.js';
+export * from './execution/attempts.js';
+export * from './execution/fixtures.js';
+export * from './execution/process.js';
+export * from './execution/synthetic.js';
+export * from './execution/adapter.js';
+export * from './evidence/collector.js';
+export * from './evidence/handoff.js';

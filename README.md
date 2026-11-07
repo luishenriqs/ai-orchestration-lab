@@ -11,31 +11,40 @@ O laboratório `ai-orchestration-lab` é um projeto **estritamente independente*
 - Nenhuma atividade deste laboratório altera documentos canônicos, estados normativos, cartões ou código-fonte do IAS.
 - Na Fase P1, todas as execuções operam exclusivamente sobre dados e fixtures sintéticas (`SYNTHETIC_LAB`).
 
-## 3. Escopo Atual (`P1-001` e `P1-002`)
+## 3. Estado atual — P1 implementada, revisão independente pendente
 
-O estado atual do código contempla a fundação técnica da **`P1-001`** e a infraestrutura de validação estrutural de contratos da **`P1-002`**:
+A implementação P1-003 a P1-008 acrescenta:
 
-- **Fundação (`P1-001`):**
-  - Inicialização do pacote Node.js 24 (`"type": "module"`) e TypeScript (`5.9.3`).
-  - Instalação exata e reproduzível das dependências de base (`ajv@8.20.0`, `ajv-formats@3.0.1`, `typescript@5.9.3`, `@types/node@24.19.2`).
-  - Estrutura canônica de diretórios do laboratório, compilação (`tsc`), verificação estática de tipos (`tsc --noEmit`) e suíte de fundação (`tests/unit/foundation.test.ts`).
-- **Validação Estrutural de Contratos (`P1-002`):**
-  - Sete arquivos JSON Schema Draft 2020-12 em `schemas/` (`TaskContract`, `ApprovalRecord`, `ExecutionAttempt`, `ExecutionResult`, `EvidenceManifest`, `ReviewHandoffPackage`, `ReviewReport`).
-  - Carregador determinístico de schemas independente de `process.cwd()` (`src/contracts/schema-loader.ts`).
-  - Validador estrito `Ajv2020` + `ajv-formats` (`strict: true, allErrors: true, coerceTypes: false, useDefaults: false, removeAdditional: false, allowUnionTypes: true`) em `src/contracts/validator.ts` e tipos normativos em `src/contracts/types.ts`.
-  - Suíte unitária completa para os sete contratos (`tests/unit/contracts-validation.test.ts`).
+- Canonicalização RFC8785, SHA256, parser sem chaves duplicadas e aprovação vinculada a registros confiáveis do host.
+- Eventos persistentes de tentativas, transições, reconciliação por token de processo e rollback com arquivo de evidências.
+- Fixtures Git independentes e dez comportamentos sintéticos sob bubblewrap.
+- RED e GREEN observados em invocações distintas; escrita permitida somente no arquivo de implementação autorizado.
+- Coleta Git independente, logs, hashes, snapshots de governança e handoff local verificado.
+- TASK-READY, ValidationGate e PR-GATE com decisões auditáveis.
+- CLI serial que reproduz os 16 cenários oficiais e gera relatórios JSON/Markdown.
 
-## 4. Limitações Atuais e Funcionalidades Reservadas às Etapas Posteriores
+A baseline e a autorização vigente estão em [P1-EXECUTION-BASELINE](docs/evidence/P1-EXECUTION-BASELINE.md). Os documentos originais preservam seus estados históricos. O resultado consolidado está em [P1-IMPLEMENTATION-FINAL-REPORT](P1-IMPLEMENTATION-FINAL-REPORT.md).
 
-**Importante:** A conclusão das tarefas `P1-001` e `P1-002` fornece a infraestrutura base e a validação estrutural estática de contratos isolados. Os seguintes componentes **ainda não estão implementados** e pertencem às tarefas subsequentes (sujeitas aos respectivos gates de autorização):
+## 4. Reproduzir a validação P1
 
-- **`P1-003`**: Canonicalização JSON (`JCS-RFC8785-v1`), hashing SHA-256 e validação semântica/relacional de `ApprovalRecord`.
-- **`P1-004`**: Ciclo de vida de `ExecutionAttempt`, detecção de tentativas órfãs (`Reconciler`) e rollback controlado.
-- **`P1-005`**: `FixtureWorkspaceManager`, `ExecutionAdapter`, executor sintético determinístico (`SYN-001` a `SYN-010`), protocolo `RED → GREEN` em duas fases e experimento de isolamento preventivo no WSL2.
-- **`P1-006`**: `EvidenceCollector`, `EvidenceManifest` e geração/validação semântica de `ReviewHandoffPackage`.
-- **`P1-007`**: Implementação dos predicados `TASK-READY`, `ValidationGate` e `PR-GATE`.
-- **`P1-008`**: Simulação adversarial de ponta a ponta (16 cenários obrigatórios) e relatórios finais de evidência da P1.
-- **`P2` a `P4`**: Benchmark de executores reais (Codex e Antigravity), automação de handoffs de revisão e piloto controlado.
+Além de Node/npm/Git, a execução integrada exige Linux/WSL2 com `/proc` e `bubblewrap` funcional (`/usr/bin/bwrap`). A instalação da ferramenta sozinha não comprova isolamento. Se namespaces ou mounts forem negados, os testes falham e TASK-READY bloqueia; não há fallback desprotegido.
+
+```bash
+npm ci
+npm run typecheck
+npm test
+npm run test:coverage
+npm run simulate
+node scripts/verify-evidence.mjs
+```
+
+`npm test` e a simulação são seriais. A opção do runner Node `--test-isolation=none` permite a contagem individual dos testes neste ambiente; a separação de segurança dos subprocessos é imposta independentemente pelo bubblewrap. Não executar dois comandos de simulação/testes simultaneamente.
+
+`npm run simulate` cria fixtures novas em `worktrees/` e tentativas em `runs/`, sem limpar execuções anteriores. Cada execução arquiva seus próprios artefatos em `docs/evidence/p1-execution/scenarios/run-<uuid>/`. Os arquivos `p1-simulation-report.json` e `P1-Relatorio-Final-Validacao.md` apontam para o resultado mais recente; os anteriores permanecem nos diretórios de execução. Nenhuma ação de push, merge ou exportação externa é realizada.
+
+O adapter desta prova de conceito executa os programas sintéticos fixos: alteração em `src/sum.cjs`, teste host `tests/sum.cjs` e baseline Git registrada. Os contratos gerais continuam separados da política operacional restrita do laboratório. Revisões e aprovações nos cenários são dados **sintéticos**, sem representar revisão independente ou aprovação humana de resultados reais.
+
+A barreira preventiva restringe filesystem, capabilities, rede e visibilidade do host. `/tmp` e `/dev` são áreas privadas de runtime. Captura de saída é limitada a 1 MiB por stream e há timeout/encerramento de grupo; não foram implementadas quotas rígidas de CPU, memória ou PIDs. A P1 não autoriza código arbitrário ou executores reais.
 
 ## 5. Pré-requisitos de Ambiente
 
@@ -78,7 +87,7 @@ npm run build
 npm test
 ```
 
-> O script `npm test` executa `npm run build` seguido de `node --test --test-reporter=spec 'dist/tests/**/*.test.js'`, utilizando o resolvedor interno de globs do Node.js 24 (entre aspas simples para evitar dependência de expansão de glob pelo shell `/bin/sh`).
+> O script `npm test` executa `npm run build` seguido de `node --test --test-reporter=spec 'dist/tests/**/*.test.js'`, com `--test-isolation=none --test-concurrency=1`, utilizando o resolvedor interno de globs do Node.js 24 (entre aspas simples para evitar dependência de expansão de glob pelo shell `/bin/sh`).
 
 ## 7. Estrutura de Diretórios
 
@@ -87,7 +96,7 @@ ai-orchestration-lab/
 ├── docs/
 │   ├── specifications/   # Especificações aprovadas (P0 v0.3.0 e P1 v0.2.0)
 │   └── evidence/         # Evidências e relatórios de validação
-├── schemas/              # JSON Schemas Draft 2020-12 (reservado para P1-002)
+├── schemas/              # Sete JSON Schemas Draft 2020-12
 ├── contracts/            # TaskContracts (reservado para P1-002+)
 ├── approvals/            # ApprovalRecords (reservado para P1-003+)
 ├── reviews/              # ReviewReports (reservado para P1-006+)

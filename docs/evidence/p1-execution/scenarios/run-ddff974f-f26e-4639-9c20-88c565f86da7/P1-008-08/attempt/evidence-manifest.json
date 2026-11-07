@@ -1,0 +1,96 @@
+{
+  "schema_version": "0.3-p0",
+  "execution_id": "P1-008-08-f56851b7-35ab-41ce-b7bb-fbbd9fc7911b",
+  "attempt_id": "A",
+  "evidence_origin": "HOST_OBSERVED",
+  "git": {
+    "base_sha": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "head_sha": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "dirty_worktree_files": [
+      "src/sum.cjs"
+    ],
+    "diff_sha256": "1cc15c71517e56b729d97b88a419e232ddead89c275fcede76c3ae82ba660dc4"
+  },
+  "test_evidence": {
+    "strategy": "RED_GREEN",
+    "red": {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-08-f56851b7-35ab-41ce-b7bb-fbbd9fc7911b/A/workspace",
+      "started_at": "2026-11-07T00:37:24.696Z",
+      "duration_ms": 24,
+      "exit_code": 1,
+      "log_path": "red.json",
+      "log_sha256": "0b6d234c8d82b7c4181bd159346ce4df7781c0053cd0f4a41b74943381b344cf",
+      "observed_outcome": "FAIL"
+    },
+    "green": {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-08-f56851b7-35ab-41ce-b7bb-fbbd9fc7911b/A/workspace",
+      "started_at": "2026-11-07T00:37:24.756Z",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "log_path": "green.json",
+      "log_sha256": "3491cf2e4f15e4278e4235cd0d14e85c508ad06fd08fa5f5ffb1b997d88c0ad2",
+      "observed_outcome": "PASS"
+    },
+    "baseline": null
+  },
+  "independent_test_runs": [
+    {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-08-f56851b7-35ab-41ce-b7bb-fbbd9fc7911b/A/workspace",
+      "started_at": "2026-11-07T00:37:24.696Z",
+      "duration_ms": 24,
+      "exit_code": 1,
+      "log_path": "red.json",
+      "log_sha256": "0b6d234c8d82b7c4181bd159346ce4df7781c0053cd0f4a41b74943381b344cf",
+      "observed_outcome": "FAIL"
+    },
+    {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-08-f56851b7-35ab-41ce-b7bb-fbbd9fc7911b/A/workspace",
+      "started_at": "2026-11-07T00:37:24.756Z",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "log_path": "green.json",
+      "log_sha256": "3491cf2e4f15e4278e4235cd0d14e85c508ad06fd08fa5f5ffb1b997d88c0ad2",
+      "observed_outcome": "PASS"
+    }
+  ],
+  "scope_validation": {
+    "result": "PASS",
+    "unexpected_files": []
+  },
+  "evidence_integrity": {
+    "artifact_hashes": [
+      {
+        "path": "diff.bundle.json",
+        "sha256": "1cc15c71517e56b729d97b88a419e232ddead89c275fcede76c3ae82ba660dc4"
+      },
+      {
+        "path": "workspace-observation.json",
+        "sha256": "8cf37051c0649a23abda2da894090b3108e722fbfed981987eeaea59e7c7a188"
+      },
+      {
+        "path": "executor-observation.json",
+        "sha256": "71c2425a04d63d0054a4b6406e1c9a9fbfda32a0cae40d40024867f5a5af9652"
+      },
+      {
+        "path": "isolation-proof.json",
+        "sha256": "a3fa0e208b1bab90b5b2d45f597e3bee39307dc46c4bf79f8b65e4069942683d"
+      },
+      {
+        "path": "governance-integrity.json",
+        "sha256": "218c5ea845129a9abbc1543d0881361afd3274aa29b22b60f81c5a5481d6af61"
+      },
+      {
+        "path": "red.json",
+        "sha256": "0b6d234c8d82b7c4181bd159346ce4df7781c0053cd0f4a41b74943381b344cf"
+      },
+      {
+        "path": "green.json",
+        "sha256": "3491cf2e4f15e4278e4235cd0d14e85c508ad06fd08fa5f5ffb1b997d88c0ad2"
+      }
+    ]
+  }
+}

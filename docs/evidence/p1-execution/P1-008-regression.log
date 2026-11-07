@@ -1,0 +1,7 @@
+stage=P1-008 phase=regression command=node --test --test-isolation=none --test-reporter=spec dist/tests/**/*.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+src/execution/attempts.ts(65,88): error TS18047: 'process' is possibly 'null'.
+build_exit=2

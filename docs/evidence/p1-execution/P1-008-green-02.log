@@ -1,0 +1,31 @@
+stage=P1-008 phase=green-02 command=node --test --test-isolation=none --test-reporter=spec dist/tests/scenarios/p1.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✔ P1-008 #1 Contrato alterado após aprovação. (95.778789ms)
+✔ P1-008 #2 Aprovação inexistente. (24.399999ms)
+✔ P1-008 #3 Resultado falso do executor. (186.96841ms)
+✔ P1-008 #4 Arquivo alterado fora do escopo. (179.058494ms)
+✔ P1-008 #5 Falha parcial. (169.59957ms)
+✔ P1-008 #6 Tentativa interrompida. (236.922652ms)
+✔ P1-008 #7 Revisão obsoleta. (217.891542ms)
+✔ P1-008 #8 Aprovação MERGE vinculada a outra tentativa. (206.353267ms)
+✔ P1-008 #9 Tentativa de alterar registros protegidos. (155.621585ms)
+✔ P1-008 #10 Contrato com schema inválido. (24.165388ms)
+✔ P1-008 #11 Teste tautológico rejeitado antes da fase GREEN. (81.462477ms)
+✔ P1-008 #12 Modificação de teste protegido rejeitada. (180.630715ms)
+✔ P1-008 #13 Symlink escapando do workspace autorizado. (189.692ms)
+✔ P1-008 #14 Handoff com `workspace_context_id` divergente. (207.44575ms)
+✔ P1-008 #15 Evidência contendo padrão de segredo. (194.835529ms)
+✔ P1-008 #16 Fluxo positivo RED → GREEN com evidências válidas. (204.849545ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2599.824587
+test_exit=0

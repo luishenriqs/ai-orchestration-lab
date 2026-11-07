@@ -9,7 +9,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "test": "npm run build && node --test --test-reporter=spec 'dist/tests/**/*.test.js'"
+    "test": "npm run build && node --test --test-isolation=none --test-concurrency=1 --test-reporter=spec 'dist/tests/**/*.test.js'",
+    "simulate": "npm run build && node dist/src/cli/main.js simulate",
+    "test:coverage": "npm run build && node --test --test-isolation=none --test-concurrency=1 --experimental-test-coverage --test-coverage-include='dist/src/**/*.js' --test-reporter=spec 'dist/tests/**/*.test.js'"
   },
   "dependencies": {
     "ajv": "8.20.0",

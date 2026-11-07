@@ -1,0 +1,71 @@
+{
+  "schema_version": "0.3-p0",
+  "execution_id": "P1-008-04-8ad18d5d-5fa5-439c-aeff-9146a2c1fc00",
+  "attempt_id": "A",
+  "evidence_origin": "HOST_OBSERVED",
+  "git": {
+    "base_sha": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "head_sha": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "dirty_worktree_files": [],
+    "diff_sha256": "3ad5a31223401f648e55c8d9cbe5b04c57782f1253f8413b8a29c192cfabb2f9"
+  },
+  "test_evidence": {
+    "strategy": "RED_GREEN",
+    "red": {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-04-8ad18d5d-5fa5-439c-aeff-9146a2c1fc00/A/workspace",
+      "started_at": "2026-11-07T00:11:09.144Z",
+      "duration_ms": 22,
+      "exit_code": 1,
+      "log_path": "red.json",
+      "log_sha256": "2c2e885eef0f3687f4ab132173cd3f7e65455730b353a338c7f0ff3924f4cd65",
+      "observed_outcome": "FAIL"
+    },
+    "green": null,
+    "baseline": null
+  },
+  "independent_test_runs": [
+    {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-04-8ad18d5d-5fa5-439c-aeff-9146a2c1fc00/A/workspace",
+      "started_at": "2026-11-07T00:11:09.144Z",
+      "duration_ms": 22,
+      "exit_code": 1,
+      "log_path": "red.json",
+      "log_sha256": "2c2e885eef0f3687f4ab132173cd3f7e65455730b353a338c7f0ff3924f4cd65",
+      "observed_outcome": "FAIL"
+    }
+  ],
+  "scope_validation": {
+    "result": "PASS",
+    "unexpected_files": []
+  },
+  "evidence_integrity": {
+    "artifact_hashes": [
+      {
+        "path": "diff.bundle.json",
+        "sha256": "3ad5a31223401f648e55c8d9cbe5b04c57782f1253f8413b8a29c192cfabb2f9"
+      },
+      {
+        "path": "workspace-observation.json",
+        "sha256": "703c0916657c5b7bec96f31b66686d62e17370a415b3065b0ccb124b95b2fa7e"
+      },
+      {
+        "path": "executor-observation.json",
+        "sha256": "6d45dd4b225c3f171e22a76ec69d79e8e5137f0acc98624257dd6945fc148fdf"
+      },
+      {
+        "path": "isolation-proof.json",
+        "sha256": "57528ef254814ba4b3948e66b93a8f1ace02c4f8ce01dbc0066c862b74a9f4e6"
+      },
+      {
+        "path": "governance-integrity.json",
+        "sha256": "dbb6ed897a5cea9007f2564d7f0cf7e468d1a1963d2ce3c043fbace9615b9d95"
+      },
+      {
+        "path": "red.json",
+        "sha256": "2c2e885eef0f3687f4ab132173cd3f7e65455730b353a338c7f0ff3924f4cd65"
+      }
+    ]
+  }
+}

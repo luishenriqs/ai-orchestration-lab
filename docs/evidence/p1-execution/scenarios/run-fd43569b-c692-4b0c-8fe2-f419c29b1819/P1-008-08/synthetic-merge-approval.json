@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.3-p0",
+  "approval_id": "SYN-MERGE-P1-008-08-67ddd801-1ceb-4872-8423-5e8988b9064a",
+  "execution_id": "P1-008-08-67ddd801-1ceb-4872-8423-5e8988b9064a",
+  "contract_revision": 1,
+  "approved_contract_sha256": "0431239526ca8686a7af0a9a142bb60a47eb1648f7e0a9cf1ea8bdd651d7a463",
+  "canonicalization_version": "JCS-RFC8785-v1",
+  "approval_scope": "MERGE",
+  "authorized_by": "SYNTHETIC_OWNER_NOT_REAL_HUMAN_APPROVAL",
+  "authorized_at": "2026-11-07T00:11:10.659Z",
+  "approval_source": "SYNTHETIC_LAB_ONLY",
+  "attempt_id": "OTHER-ATTEMPT",
+  "approved_diff_sha256": "1cc15c71517e56b729d97b88a419e232ddead89c275fcede76c3ae82ba660dc4",
+  "review_id": "SYN-REVIEW-A"
+}

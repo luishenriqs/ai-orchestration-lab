@@ -1,0 +1,11 @@
+{
+  "gate": "TASK-READY",
+  "allowed": false,
+  "reasons": [
+    "INVALID_CONTRACT"
+  ],
+  "decided_at": "2026-11-07T00:11:10.864Z",
+  "execution_id": "P1-008-10-9b8f64c3-7ce3-4577-abe6-8eae9f439474",
+  "attempt_id": "A",
+  "contract_sha256": ""
+}

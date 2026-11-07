@@ -1,0 +1,53 @@
+stage=P1-008 phase=audit-red command=node --test --test-isolation=none --test-reporter=spec dist/tests/integration/recovery-guards.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✖ P1-008 recovery audit: stale transition lock is archived with owner proof before reconciliation (83.428107ms)
+✖ P1-008 identity audit: fixture/execution and executor bindings must agree before readiness (51.026839ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 176.997935
+
+✖ failing tests:
+
+test at dist/tests/integration/recovery-guards.test.js:14:1
+✖ P1-008 recovery audit: stale transition lock is archived with owner proof before reconciliation (83.428107ms)
+  Error: EEXIST: file already exists, open '/home/luishenriqs/projects/ai-orchestration-lab/runs/guard-767362ff-5be0-40f8-9654-839e823459bc/attempts/A/.transition-lock'
+      at Object.openSync (node:fs:621:18)
+      at AttemptStore.transition (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/attempts.js:86:23)
+      at AttemptStore.reconcile (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/attempts.js:106:25)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/recovery-guards.test.js:22:24)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    errno: -17,
+    code: 'EEXIST',
+    syscall: 'open',
+    path: '/home/luishenriqs/projects/ai-orchestration-lab/runs/guard-767362ff-5be0-40f8-9654-839e823459bc/attempts/A/.transition-lock'
+  }
+
+test at dist/tests/integration/recovery-guards.test.js:25:1
+✖ P1-008 identity audit: fixture/execution and executor bindings must agree before readiness (51.026839ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/recovery-guards.test.js:28:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+test_exit=1

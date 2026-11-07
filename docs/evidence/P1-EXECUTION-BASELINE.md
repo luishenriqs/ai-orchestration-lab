@@ -29,3 +29,16 @@ Para cada tarefa: testes e stub compilável, RED funcional com log integral, imp
 - DEC-EXEC-03: eventos de tentativa imutáveis e numerados são fonte de verdade; attempt.json é projeção recuperável. Token de processo combina boot_id/starttime Linux, não apenas PID.
 - DEC-EXEC-04: bubblewrap com raiz somente leitura, rede/PID isolados, fixture gravável somente nos caminhos autorizados; host e runners fora da escrita. Snapshot adicional detecta alteração do conjunto/conteúdo dos registros protegidos. Experimento inicial no sandbox falhou (NETLINK_ROUTE); o mesmo probe fora do sandbox passou. Validação efetiva será reproduzida em fixtures, não presumida por disponibilidade.
 - DEC-EXEC-05: casos adversariais que precisam produzir mutações indevidas usam fixture exclusiva e host de injeção de falhas; invocações de executor passam pela barreira preventiva. Evidências distinguirão os dois procedimentos.
+
+## Encerramento técnico da execução autorizada
+
+P1-003 a P1-008 implementadas e validadas tecnicamente. Prova preventiva reproduzida no WSL2 fora do sandbox restritivo do agente. Regressão final: 77/77; simulação separada: 16/16; 306 hashes de artefatos conferidos. Evidências por etapa em P1-003.md a P1-008.md e resultado consolidado no relatório da raiz.
+
+| Gate | Estado atual |
+|---|---|
+| P1-START / implementação P1-003..008 | AUTORIZADA pela declaração expressa de Luís Henrique Pereira nesta conversa, 06/11/2026 |
+| P1-VALIDATION (técnico) | SATISFEITO na execução documentada |
+| Revisão crítica independente final | PENDENTE — será realizada por outros agentes |
+| P1-DONE / homologação humana final | PENDENTE — não substituída pelo teste sintético de PR-GATE |
+| P2 / executores reais | NÃO AUTORIZADOS |
+| Push / merge remoto / deploy | NÃO AUTORIZADOS e NÃO EXECUTADOS |

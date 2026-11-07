@@ -1,0 +1,6 @@
+ai-orchestration-lab@0.1.0 /home/luishenriqs/projects/ai-orchestration-lab
+├── @types/node@24.19.2
+├── ajv-formats@3.0.1
+├── ajv@8.20.0
+└── typescript@5.9.3
+

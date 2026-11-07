@@ -1,0 +1,59 @@
+{
+  "content": "{\n  \"synthetic\": true,\n  \"authorization\": \"host-only\"\n}\n",
+  "sha256": "044aca579681e4b123fca81c55904978699ecf5ad1f3f875247b922f839022ef",
+  "governance_integrity": {
+    "before": [
+      {
+        "path": "contracts",
+        "digest": "2304a99efc5a6f67b40db1caac360c7c8a75dc3ae857845fd186ebe43e1bc179"
+      },
+      {
+        "path": "approvals",
+        "digest": "2304a99efc5a6f67b40db1caac360c7c8a75dc3ae857845fd186ebe43e1bc179"
+      },
+      {
+        "path": "schemas",
+        "digest": "61113f62a1c450f4081d91e0a98a888a823439e999622fe98f6dfb8aed8783cb"
+      },
+      {
+        "path": "reviews",
+        "digest": "2304a99efc5a6f67b40db1caac360c7c8a75dc3ae857845fd186ebe43e1bc179"
+      },
+      {
+        "path": "src",
+        "digest": "43ab4e5c6b69e1896c8bc460f70aff4a8e7db2e93af6fa05edc097c47a10de6d"
+      },
+      {
+        "path": "dist/src",
+        "digest": "6f19bd59effb5c9e1135ebbb8a76101e8c96e57eeaa7c61111f19dc281e97cc9"
+      }
+    ],
+    "after": [
+      {
+        "path": "contracts",
+        "digest": "2304a99efc5a6f67b40db1caac360c7c8a75dc3ae857845fd186ebe43e1bc179"
+      },
+      {
+        "path": "approvals",
+        "digest": "2304a99efc5a6f67b40db1caac360c7c8a75dc3ae857845fd186ebe43e1bc179"
+      },
+      {
+        "path": "schemas",
+        "digest": "61113f62a1c450f4081d91e0a98a888a823439e999622fe98f6dfb8aed8783cb"
+      },
+      {
+        "path": "reviews",
+        "digest": "2304a99efc5a6f67b40db1caac360c7c8a75dc3ae857845fd186ebe43e1bc179"
+      },
+      {
+        "path": "src",
+        "digest": "43ab4e5c6b69e1896c8bc460f70aff4a8e7db2e93af6fa05edc097c47a10de6d"
+      },
+      {
+        "path": "dist/src",
+        "digest": "6f19bd59effb5c9e1135ebbb8a76101e8c96e57eeaa7c61111f19dc281e97cc9"
+      }
+    ],
+    "intact": true
+  }
+}

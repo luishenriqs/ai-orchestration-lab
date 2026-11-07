@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.3-p0",
+  "approval_id": "SYN-APPROVAL-P1-008-12-e48bb549-7065-4b42-8831-88da9ef85e68",
+  "execution_id": "P1-008-12-e48bb549-7065-4b42-8831-88da9ef85e68",
+  "contract_revision": 1,
+  "approved_contract_sha256": "11f8f6d259ad9361045ca2a5ae61fae2c6f1c10959e3e02a7d499d291e62857c",
+  "canonicalization_version": "JCS-RFC8785-v1",
+  "approval_scope": "EXECUTION",
+  "authorized_by": "SYNTHETIC_OWNER_NOT_REAL_HUMAN_APPROVAL",
+  "authorized_at": "2026-11-07T00:11:10.961Z",
+  "approval_source": "SYNTHETIC_LAB_ONLY"
+}

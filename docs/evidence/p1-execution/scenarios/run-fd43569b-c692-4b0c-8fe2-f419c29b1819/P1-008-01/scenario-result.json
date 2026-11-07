@@ -1,0 +1,67 @@
+{
+  "official_number": 1,
+  "identifier": "P1-008-01",
+  "objective": "Contrato alterado após aprovação.",
+  "initial_conditions": "SYNTHETIC_LAB; independent Git fixture; serial host; zero retry; synthetic approval/review inputs only",
+  "procedure": [
+    "Create independent registered Git fixture with deterministic base; enroll explicitly synthetic host authorization",
+    "Alter approved contract without re-enrolling approval",
+    "Run serial adapter (SYN-001), host TASK-READY/RED/executor/GREEN/collection/handoff/gates"
+  ],
+  "expected": "Reject invalid continuation with preserved evidence",
+  "observed": {
+    "state": "BLOCKED",
+    "task_ready": {
+      "gate": "TASK-READY",
+      "allowed": false,
+      "reasons": [
+        "CONTRACT_HASH_MISMATCH"
+      ],
+      "decided_at": "2026-11-07T00:11:08.875Z",
+      "execution_id": "P1-008-01-dc8d23ab-1f0d-46f0-b0fb-0b512dd94d91",
+      "attempt_id": "A",
+      "contract_sha256": "7e8891be44213081e34894ee48f6b28879849b1f3b627aea1947dfd45cfe3831"
+    },
+    "validation": null
+  },
+  "status": "PASS",
+  "evidence_directory": "/home/luishenriqs/projects/ai-orchestration-lab/docs/evidence/p1-execution/scenarios/run-fd43569b-c692-4b0c-8fe2-f419c29b1819/P1-008-01",
+  "artifacts": [
+    {
+      "path": "attempt/approval.json",
+      "sha256": "dc9775ef765ad42224d89b9d9603bd4b000535368e678d9e2e2c90d864300d22"
+    },
+    {
+      "path": "attempt/attempt.json",
+      "sha256": "0dbaa9c0f417b96889129c27eaa58f697893bf4dd65793f5046094a76ae613ff"
+    },
+    {
+      "path": "attempt/contract.json",
+      "sha256": "3cb0d38666154f8d9488e0121a40ae15656e4f20adc1908e0d7759e62f01c9ab"
+    },
+    {
+      "path": "attempt/events/000000.json",
+      "sha256": "3db52a7c5819c6aaebb79ea85b9326fbc6366f44c8b2f18bf381544e6877c93d"
+    },
+    {
+      "path": "attempt/events/000001.json",
+      "sha256": "f04dc4bfb2b376da10201ab1e23390b5580fea831d21ea66c2263bf1357efaac"
+    },
+    {
+      "path": "attempt/host-policy.json",
+      "sha256": "2058a68e19e88ae35ba44a99a855069357da0de8cc39f4fb2ff843710b407546"
+    },
+    {
+      "path": "attempt/task-ready.json",
+      "sha256": "aa6f067089391019b26c415eb8508af8689f88b373867b68e166e9f07af4d8b6"
+    },
+    {
+      "path": "baseline-files.json",
+      "sha256": "46e39ec41699421b6c5dcd266d0f6de8bd6b8f5f27dd6ef427ec372e8362fab6"
+    },
+    {
+      "path": "fixture-record.json",
+      "sha256": "3f32ce2036ca39b58247ce904335c311010bcff8d19003c75a90d979d5c6b448"
+    }
+  ]
+}

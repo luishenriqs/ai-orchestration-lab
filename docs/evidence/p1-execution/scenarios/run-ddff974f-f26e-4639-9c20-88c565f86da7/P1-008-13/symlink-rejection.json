@@ -1,0 +1,8 @@
+{
+  "target": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-13-31fb6c6e-c423-4fdd-b25e-848c514bd957/A/outside-sentinel.txt",
+  "reasons": [
+    "EVIDENCE_IO:SYMLINK_FORBIDDEN"
+  ],
+  "before": "4e2c1bafe43829c1c99994be332fbcc66d25dc98b9822c4685cc06d1fa7ed656",
+  "after": "4e2c1bafe43829c1c99994be332fbcc66d25dc98b9822c4685cc06d1fa7ed656"
+}

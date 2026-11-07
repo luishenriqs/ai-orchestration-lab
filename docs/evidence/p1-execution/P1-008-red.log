@@ -1,0 +1,305 @@
+stage=P1-008 phase=red command=node --test --test-isolation=none --test-reporter=spec dist/tests/scenarios/p1.test.js
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+build_exit=0
+✖ P1-008 #1 Contrato alterado após aprovação. (1.154787ms)
+✖ P1-008 #2 Aprovação inexistente. (0.160822ms)
+✖ P1-008 #3 Resultado falso do executor. (0.155009ms)
+✖ P1-008 #4 Arquivo alterado fora do escopo. (0.128441ms)
+✖ P1-008 #5 Falha parcial. (0.092022ms)
+✖ P1-008 #6 Tentativa interrompida. (0.117176ms)
+✖ P1-008 #7 Revisão obsoleta. (0.117133ms)
+✖ P1-008 #8 Aprovação MERGE vinculada a outra tentativa. (0.082118ms)
+✖ P1-008 #9 Tentativa de alterar registros protegidos. (0.12298ms)
+✖ P1-008 #10 Contrato com schema inválido. (0.195272ms)
+✖ P1-008 #11 Teste tautológico rejeitado antes da fase GREEN. (0.163161ms)
+✖ P1-008 #12 Modificação de teste protegido rejeitada. (0.103371ms)
+✖ P1-008 #13 Symlink escapando do workspace autorizado. (0.055307ms)
+✖ P1-008 #14 Handoff com `workspace_context_id` divergente. (0.041009ms)
+✖ P1-008 #15 Evidência contendo padrão de segredo. (0.092542ms)
+✖ P1-008 #16 Fluxo positivo RED → GREEN com evidências válidas. (0.107682ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 0
+ℹ fail 16
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17.765519
+
+✖ failing tests:
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #1 Contrato alterado após aprovação. (1.154787ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #2 Aprovação inexistente. (0.160822ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #3 Resultado falso do executor. (0.155009ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #4 Arquivo alterado fora do escopo. (0.128441ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #5 Falha parcial. (0.092022ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #6 Tentativa interrompida. (0.117176ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #7 Revisão obsoleta. (0.117133ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #8 Aprovação MERGE vinculada a outra tentativa. (0.082118ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #9 Tentativa de alterar registros protegidos. (0.12298ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #10 Contrato com schema inválido. (0.195272ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #11 Teste tautológico rejeitado antes da fase GREEN. (0.163161ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #12 Modificação de teste protegido rejeitada. (0.103371ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #13 Symlink escapando do workspace autorizado. (0.055307ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #14 Handoff com `workspace_context_id` divergente. (0.041009ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #15 Evidência contendo padrão de segredo. (0.092542ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #16 Fluxo positivo RED → GREEN com evidências válidas. (0.107682ms)
+  AssertionError [ERR_ASSERTION]: "NOT_IMPLEMENTED"
+  
+  'FAIL' !== 'PASS'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:13:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'PASS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+test_exit=1

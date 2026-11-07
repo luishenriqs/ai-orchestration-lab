@@ -1,0 +1,11 @@
+{
+  "gate": "PR-GATE",
+  "allowed": false,
+  "reasons": [
+    "MERGE_ATTEMPT_MISMATCH"
+  ],
+  "decided_at": "2026-11-07T00:11:10.690Z",
+  "execution_id": "P1-008-08-67ddd801-1ceb-4872-8423-5e8988b9064a",
+  "attempt_id": "A",
+  "contract_sha256": "0431239526ca8686a7af0a9a142bb60a47eb1648f7e0a9cf1ea8bdd651d7a463"
+}

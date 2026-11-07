@@ -1,0 +1,21 @@
+{
+  "phase": "red",
+  "fixture_execution_id": "P1-008-11-bd90ab79-c320-4276-a534-49f5f33a8b9d",
+  "attempt_id": "A",
+  "test_sha256": "1442a2f6c5240cebd1901b312066f36204095546588b857b816d56f1ed2c6545",
+  "observation": {
+    "exit_code": 0,
+    "signal": null,
+    "stdout": "SYN_TEST_PASS\n",
+    "stderr": "",
+    "started_at": "2026-11-07T00:11:10.923Z",
+    "duration_ms": 23,
+    "termination_reason": "NORMAL",
+    "process_identity": {
+      "pid": 88809,
+      "process_start_token": "1dc24404-8d19-40aa-b5d9-46c87291a110:1990965",
+      "executable": "/usr/bin/bwrap"
+    },
+    "truncated": false
+  }
+}
