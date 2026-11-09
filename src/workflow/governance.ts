@@ -11,6 +11,21 @@ const P2_INITIAL_AGENT_PRODUCTS=new Set(['codex','gemini','antigravity']);
 const P2_ALLOWED_OPERATIONS=new Set(['READ','WRITE','TEST','LOCAL_COMMIT']);
 
 export interface AuthorizationBinding {readonly workflow_id:string;readonly contract_sha256:string;readonly repository:string;readonly baseline_git:string;readonly worktree:string;}
+function pathSegments(value:string):string[]|null {
+  if(!value||value.startsWith('/')||value.includes('\\')||value.includes('\0')||/^[A-Za-z]:/u.test(value))return null;
+  const parts=value.split('/');if(parts.some(p=>!p||p==='.'||p==='..'||p.toLowerCase()==='.git'))return null;return parts;
+}
+function withinPath(path:string,base:string):boolean{return path===base||path.startsWith(base.endsWith('/')?base:base+'/');}
+function pathsIntersect(a:string,b:string):boolean{return withinPath(a,b)||withinPath(b,a);}
+export function validateAuthorizedPaths(paths:readonly string[],contractPaths:readonly string[],forbiddenChanges:readonly string[]):readonly string[] {
+  const reasons:string[]=[];
+  for(const path of paths){
+    if(!pathSegments(path)){reasons.push('PATH_INVALID');continue;}
+    if(contractPaths.length&&!contractPaths.some(base=>!!pathSegments(base)&&withinPath(path,base)))reasons.push('AUTHORIZATION_PATH_AMPLIFICATION');
+    if(forbiddenChanges.some(forbidden=>pathsIntersect(path,forbidden)))reasons.push('FORBIDDEN_CHANGE_PATH');
+  }
+  return Object.freeze([...new Set(reasons)]);
+}
 export function canonicalAgentAuthorizationId(identity:AgentIdentity):string {
   if(identity.status!=='VERIFIED'||!P2_INITIAL_AGENT_PRODUCTS.has(identity.product.toLowerCase())||![identity.provider_id,identity.product,identity.canonical_model_id,identity.version??'unknown'].every(v=>/^[A-Za-z0-9._-]+$/.test(v)))throw Error('AGENT_IDENTITY_NOT_VERIFIED');
   return [identity.provider_id,identity.product,identity.canonical_model_id,identity.version??'unknown'].join('/');
@@ -24,7 +39,7 @@ export function authorizeWorkflow(record:WorkflowAuthorizationRecord,approval:Ap
   if(record.workflow_id!==contract.identity.execution_id)reasons.push('WORKFLOW_BINDING_MISMATCH');
   if(record.repository!==contract.identity.repository||record.baseline_git!==contract.identity.base_commit||record.worktree!==contract.identity.workspace_root)reasons.push('REPOSITORY_BASELINE_OR_WORKTREE_MISMATCH');
   const contractPaths=[...contract.scope.allowed_impl_paths,...contract.scope.allowed_test_paths];
-  if(record.allowed_paths.some(path=>!contractPaths.some(allowed=>path===allowed||path.startsWith(allowed.endsWith('/')?allowed:allowed+'/'))))reasons.push('AUTHORIZATION_PATH_AMPLIFICATION');
+  reasons.push(...validateAuthorizedPaths(record.allowed_paths,contractPaths,contract.scope.forbidden_changes));
   if(record.network_policy!=='DENY')reasons.push('NETWORK_POLICY_NOT_ENFORCEABLE_IN_P2_001');
   if(record.allowed_operations.some(operation=>!P2_ALLOWED_OPERATIONS.has(operation)))reasons.push('OPERATION_NOT_IN_P2_POLICY');
   if(record.allowed_agents.some(agent=>{const parts=agent.split('/');return parts.length!==4||!P2_INITIAL_AGENT_PRODUCTS.has(parts[1]!.toLowerCase());}))reasons.push('AGENT_NOT_IN_P2_POLICY');
@@ -47,15 +62,11 @@ export function checkAuthorization(record:WorkflowAuthorizationRecord,binding:Au
   if(record.revoked_at!==null)reasons.push('AUTHORIZATION_REVOKED');
   if(Date.parse(record.expires_at)<=Date.parse(now))reasons.push('AUTHORIZATION_EXPIRED');
   if(!record.allowed_operations.includes(operation))reasons.push('OPERATION_OUT_OF_SCOPE');
+  reasons.push(...validateAuthorizedPaths(record.allowed_paths,[],forbiddenChanges));
   let agentKey:string|null=null;try{agentKey=canonicalAgentAuthorizationId(agent);}catch{reasons.push('AGENT_IDENTITY_UNVERIFIED');}
   if(agentKey===null||!record.allowed_agents.includes(agentKey))reasons.push('AGENT_OUT_OF_SCOPE');
   if(['WRITE','LOCAL_COMMIT'].includes(operation)&&path===undefined)reasons.push('TARGET_PATH_REQUIRED');
-  if(path!==undefined){
-    const segments=path.replaceAll('\\','/').split('/');
-    if(path.startsWith('/')||segments.some(s=>s===''||s==='.'||s==='..')||segments.some(s=>s.toLowerCase()==='.git')||path.includes('\0')||/^[A-Za-z]:/u.test(path))reasons.push('PATH_INVALID');
-    else if(!record.allowed_paths.some(p=>path===p||path.startsWith(p.endsWith('/')?p:p+'/')))reasons.push('PATH_OUT_OF_SCOPE');
-    if(forbiddenChanges.some(p=>path===p||path.startsWith(p.endsWith('/')?p:p+'/')))reasons.push('FORBIDDEN_CHANGE_PATH');
-  }
+  if(path!==undefined){if(!pathSegments(path))reasons.push('PATH_INVALID');else if(!record.allowed_paths.some(p=>!!pathSegments(p)&&withinPath(path,p)))reasons.push('PATH_OUT_OF_SCOPE');if(forbiddenChanges.some(p=>pathsIntersect(path,p)))reasons.push('FORBIDDEN_CHANGE_PATH');}
   return Object.freeze({allowed:reasons.length===0,reasons:Object.freeze(reasons)});
 }
 export interface ModelCatalogEntry {readonly provider_id:string;readonly product:string;readonly canonical_model_id:string;readonly aliases:readonly string[];readonly version:string|null;}

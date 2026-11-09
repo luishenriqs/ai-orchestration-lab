@@ -87,7 +87,7 @@ test('workflow and invocation state machines reject invalid edges and enforce ga
   assert.equal(running.state, 'RUNNING');
   const cancelling=transitionInvocation(starting,'CANCEL');
   assert.deepEqual(classifyLateProcessStart(cancelling),{action:'CONTAIN_AND_RECONCILE',invocation_id:'inv-1'});
-  assert.throws(()=>transitionInvocation(cancelling,'PROCESS_STARTED'),/LATE_PROCESS_REQUIRES_CONTAINMENT/);
+  assert.equal(transitionInvocation(cancelling,'PROCESS_STARTED').state,'CANCEL_REQUESTED');
   assert.throws(()=>transitionInvocation(cancelling,'RESULT_UNCERTAIN'),/PROCESS_RECONCILIATION_REQUIRED/);
   assert.equal(transitionInvocation(cancelling,'RESULT_UNCERTAIN',{processObservedStopped:true}).state,'INTERRUPTED');
 });
@@ -222,7 +222,8 @@ test('G5 ledger rejects caller-authored gates and final-approval proofs',()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'p2-e2e-'));
   try{
     const ledger=newLedger(root);setupActiveLedger(ledger);
-    assert.throws(()=>ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{authorizationProof,phaseGatePassed:true,nextPhase:'REVIEWING',gateProof:{...taskReadyProof,gate:'REVIEW-GATE'}}),/HOST_GATE_REQUIRED/);
+    ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{authorizationProof,phaseGatePassed:true,nextPhase:'REVIEWING',gateProof:{...taskReadyProof,gate:'REVIEW-GATE'}});
+    assert.throws(()=>ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{authorizationProof,phaseGatePassed:true,nextPhase:'EXECUTING',gateProof:{...taskReadyProof,gate:'REVIEW-GATE'}}),/HOST_GATE_REQUIRED/);
     assert.throws(()=>ledger.transitionWorkflowEvent('wf-1','APPROVE',{approvalValid:true,finalApprovalProof:{workflow_id:'wf-1',contract_sha256:canonicalHash(p1contract),diff_sha256:mergeDiff,review_sha256:mergeReviewHash,evidence_sha256:mergeEvidenceHash,actor:'test-human',source:'SIMULATED_HUMAN',verified:true,approved_at:now}}),/USE_FINAL_APPROVAL_API/);
     assert.equal(ledger.project('wf-1').state,'ACTIVE');
   }finally{fs.rmSync(root,{recursive:true,force:true});}
@@ -231,23 +232,111 @@ test('G5 ledger rejects caller-authored gates and final-approval proofs',()=>{
 test('G5 accepts a complete simulated workflow only with ledger evidence and trusted P1 merge approval',()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'p2-valid-e2e-'));
   try{
-    const flowLimits={...limits,invocations:4};
+    const flowLimits={...limits,invocations:5};
     const flowAuthorization={...authorization,authorization_id:'auth-e2e',limits:flowLimits,allowed_agents:[...authorization.allowed_agents,'google/gemini/gemini-y/1']};
     const ledger=new WorkflowLedger(root,{trusted_approvals:trusted,model_catalog:fullModelCatalog,fixture_id:'p2-unit-test',sandbox_profiles:{'openai/codex/gpt-x/1':sandboxProfile},sandbox_validations:[sandboxRecord],p1_pr_gate_verifier:(b)=>({gate:'PR-GATE',allowed:true,reasons:[],decided_at:now,execution_id:b.workflow_id,attempt_id:b.attempt_id,contract_sha256:b.contract_sha256})});
     ledger.create(workflow);ledger.recordAuthorization(flowAuthorization,p1approval,p1contract);ledger.transitionWorkflowEvent('wf-1','AUTHORIZE',{});ledger.transitionWorkflowEvent('wf-1','START',{});
     const reviewerIdentity=resolveIdentity({provider_id:'google',product:'gemini',canonical_model_id:'gemini-y',version:'1',source:'host-config',status:'DECLARED'},fullModelCatalog,{provider_id:'google',product:'gemini',model:'gemini-y',version:'1'});
+    const failed={...invocation,invocation_id:'failed-previously',role:'PLANNER' as const};ledger.reserveInvocation('wf-1',failed.invocation_id,flowLimits);appendInvocation(ledger,failed);ledger.transitionInvocation('wf-1',failed.invocation_id,'START');processStart(ledger,failed.invocation_id);ledger.recordFixtureInvocationObservation('wf-1',failed.invocation_id,'PROCESS_STOPPED','b'.repeat(64),'p2-unit-test');ledger.transitionInvocation('wf-1',failed.invocation_id,'RESULT_FAILURE');
     const records=[{...invocation,invocation_id:'impl',role:'IMPLEMENTER' as const},{...invocation,invocation_id:'review',role:'REVIEWER' as const,identity:reviewerIdentity},{...invocation,invocation_id:'validator',role:'VALIDATOR' as const}];
     for(const item of records){ledger.reserveInvocation('wf-1',item.invocation_id,flowLimits);appendInvocation(ledger,item);ledger.transitionInvocation('wf-1',item.invocation_id,'START');processStart(ledger,item.invocation_id);succeedFixture(ledger,item.invocation_id);}
     ledger.recordArtifactAuthorship('wf-1',mergeDiff,'impl','src/sum.cjs','p2-unit-test');ledger.recordArtifactReview('wf-1',mergeDiff,'review','p2-unit-test',mergeReviewHash);
     ledger.recordFixtureEvidence('wf-1','VALIDATION','validator',mergeEvidenceHash,'p2-unit-test');ledger.recordFixtureEvidence('wf-1','FINAL','validator',mergeEvidenceHash,'p2-unit-test');
-    ledger.evaluateGate('wf-1','REVIEW-GATE','p2-unit-test');
     ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'REVIEWING'});
+    ledger.evaluateGate('wf-1','REVIEW-GATE','p2-unit-test');
     ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'EXECUTING'});
-    ledger.evaluateGate('wf-1','ValidationGate','p2-unit-test');ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'VALIDATING'});
+    ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'VALIDATING'});
+    ledger.evaluateGate('wf-1','ValidationGate','p2-unit-test');
     ledger.transitionWorkflowEvent('wf-1','REQUEST_FINAL_APPROVAL',{});
     ledger.recordFinalApproval('wf-1',p1mergeApproval,'attempt-1','review-1',mergeDiff,mergeReviewHash,mergeEvidenceHash,'p2-unit-test');
     assert.equal(ledger.project('wf-1').state,'COMPLETED');
     assert.equal(ledger.verify('wf-1').filter(e=>e.event_type==='FINAL_APPROVAL_RECORDED').length,1);
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('R2 regression: resume from NONE does not create an invalid ACTIVE/NONE workflow',()=>{
+  const authorized=transitionWorkflow(workflow,'AUTHORIZE',{authorizationProof});
+  const blocked=transitionWorkflow(authorized,'REVOKE');
+  const resumed=transitionWorkflow(blocked,'RESUME',{authorizationProof:{...authorizationProof,authorization_id:'auth-new'}});
+  assert.notEqual(resumed.phase,'NONE');
+});
+
+test('R2 regression: initial grants reject invalid or forbidden path entries',()=>{
+  const binding={workflow_id:'wf-1',contract_sha256:canonicalHash(p1contract),repository:'ai-orchestration-lab',baseline_git:'b'.repeat(40),worktree:'/tmp/wf-1'};
+  assert.equal(authorizeWorkflow({...authorization,allowed_paths:['src/../secret']},p1approval,p1contract,trusted).allowed,false);
+  assert.equal(checkAuthorization({...authorization,allowed_paths:['src/sum.cjs','protected.txt']},binding,now,'WRITE',invocation.identity,'src/sum.cjs',['protected.txt']).allowed,false);
+});
+
+test('R2 regression: same source event cannot be replayed with a different source cursor',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'p2-cursor-conflict-'));
+  try{
+    const ledger=newLedger(root);setupActiveLedger(ledger);ledger.reserveInvocation('wf-1','inv-1',limits);appendInvocation(ledger,invocation);ledger.transitionInvocation('wf-1','inv-1','START');processStart(ledger,'inv-1');
+    const msg={workflow_id:'wf-1',invocation_id:'inv-1',correlation_id:'c',reply_to_message_id:null,source_event_id:'source-1',source_cursor:'4',message_type:'PLAN_RESULT' as const,payload:{p:1}};
+    ledger.acceptMessage(msg);
+    assert.throws(()=>ledger.acceptMessage({...msg,source_cursor:'5'}),/SOURCE_EVENT_CONFLICT/);
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('R2: failed historical invocation is retained but reconciled before successful completion',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'p2-r2-failed-history-'));
+  try{
+    const flowLimits={...limits,invocations:5};const flowAuth={...authorization,limits:flowLimits,allowed_agents:[...authorization.allowed_agents,'google/gemini/gemini-y/1']};
+    const ledger=new WorkflowLedger(root,{trusted_approvals:trusted,model_catalog:fullModelCatalog,fixture_id:'p2-unit-test',p1_pr_gate_verifier:b=>({gate:'PR-GATE',allowed:true,reasons:[],decided_at:now,execution_id:b.workflow_id,attempt_id:b.attempt_id,contract_sha256:b.contract_sha256})});
+    ledger.create(workflow);ledger.recordAuthorization(flowAuth,p1approval,p1contract);ledger.transitionWorkflowEvent('wf-1','AUTHORIZE',{});ledger.transitionWorkflowEvent('wf-1','START',{});
+    const failed={...invocation,invocation_id:'failed-history',role:'PLANNER' as const};ledger.reserveInvocation('wf-1',failed.invocation_id,flowLimits);appendInvocation(ledger,failed);ledger.transitionInvocation('wf-1',failed.invocation_id,'START');processStart(ledger,failed.invocation_id);ledger.recordFixtureInvocationObservation('wf-1',failed.invocation_id,'PROCESS_STOPPED','b'.repeat(64),'p2-unit-test');ledger.transitionInvocation('wf-1',failed.invocation_id,'RESULT_FAILURE');
+    const reviewer=resolveIdentity({provider_id:'google',product:'gemini',canonical_model_id:'gemini-y',version:'1',source:'host-config',status:'DECLARED'},fullModelCatalog,{provider_id:'google',product:'gemini',model:'gemini-y',version:'1'});
+    for(const item of [{...invocation,invocation_id:'impl',role:'IMPLEMENTER' as const},{...invocation,invocation_id:'review',role:'REVIEWER' as const,identity:reviewer},{...invocation,invocation_id:'validator',role:'VALIDATOR' as const}]){ledger.reserveInvocation('wf-1',item.invocation_id,flowLimits);appendInvocation(ledger,item);ledger.transitionInvocation('wf-1',item.invocation_id,'START');processStart(ledger,item.invocation_id);succeedFixture(ledger,item.invocation_id);}
+    ledger.recordArtifactAuthorship('wf-1',mergeDiff,'impl','src/sum.cjs','p2-unit-test');ledger.recordArtifactReview('wf-1',mergeDiff,'review','p2-unit-test',mergeReviewHash);ledger.recordFixtureEvidence('wf-1','VALIDATION','validator',mergeEvidenceHash,'p2-unit-test');ledger.recordFixtureEvidence('wf-1','FINAL','validator',mergeEvidenceHash,'p2-unit-test');
+    ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'REVIEWING'});ledger.evaluateGate('wf-1','REVIEW-GATE','p2-unit-test');ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'EXECUTING'});ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'VALIDATING'});ledger.evaluateGate('wf-1','ValidationGate','p2-unit-test');ledger.transitionWorkflowEvent('wf-1','REQUEST_FINAL_APPROVAL',{});
+    ledger.recordFinalApproval('wf-1',p1mergeApproval,'attempt-1','review-1',mergeDiff,mergeReviewHash,mergeEvidenceHash,'p2-unit-test');
+    assert.equal(ledger.project('wf-1').state,'COMPLETED');assert.equal(ledger.invocationsFrom(ledger.verify('wf-1')).find(i=>i.invocation_id==='failed-history')?.state,'FAILED');
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('R2: FAIL enters containment while an invocation is active; CREATED invocations can be cancelled safely',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'p2-r2-fail-containment-'));
+  try{
+    const ledger=newLedger(root);setupActiveLedger(ledger);ledger.reserveInvocation('wf-1','inv-1',limits);appendInvocation(ledger,invocation);ledger.transitionInvocation('wf-1','inv-1','START');processStart(ledger,'inv-1');
+    ledger.transitionWorkflowEvent('wf-1','FAIL',{});assert.equal(ledger.project('wf-1').state,'CANCEL_REQUESTED');assert.equal(ledger.invocationsFrom(ledger.verify('wf-1'))[0]?.state,'CANCEL_REQUESTED');
+    ledger.recordFixtureInvocationObservation('wf-1','inv-1','PROCESS_STOPPED','e'.repeat(64),'p2-unit-test');ledger.transitionInvocation('wf-1','inv-1','RESULT_UNCERTAIN');ledger.transitionWorkflowEvent('wf-1','CONFIRM_FAIL',{});assert.equal(ledger.project('wf-1').state,'FAILED');
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+  const createdRoot=fs.mkdtempSync(path.join(os.tmpdir(),'p2-r2-created-cancel-'));
+  try{
+    const ledger=newLedger(createdRoot);setupActiveLedger(ledger);ledger.reserveInvocation('wf-1','inv-1',limits);appendInvocation(ledger,invocation);ledger.transitionWorkflowEvent('wf-1','CANCEL',{});
+    assert.equal(ledger.invocationsFrom(ledger.verify('wf-1'))[0]?.state,'CANCELLED');ledger.transitionWorkflowEvent('wf-1','CONFIRM_CANCEL',{});assert.equal(ledger.project('wf-1').state,'CANCELLED');
+  }finally{fs.rmSync(createdRoot,{recursive:true,force:true});}
+});
+
+test('R2: duration exhaustion blocks progress and requests invocation containment',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'p2-r2-timeout-'));
+  try{
+    let clock=Date.parse(now);const ledger=new WorkflowLedger(root,{trusted_approvals:trusted,model_catalog:fullModelCatalog,fixture_id:'p2-unit-test',clock:()=>clock});setupActiveLedger(ledger);
+    ledger.reserveInvocation('wf-1','inv-1',limits);appendInvocation(ledger,invocation);ledger.transitionInvocation('wf-1','inv-1','START');
+    clock+=7_200_001;assert.throws(()=>ledger.assertBudgets('wf-1'),/DURATION_LIMIT_EXCEEDED/);assert.equal(ledger.project('wf-1').state,'BLOCKED');assert.equal(ledger.invocationsFrom(ledger.verify('wf-1'))[0]?.state,'CANCEL_REQUESTED');
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('R2: a review gate becomes stale when a new artifact is authored in the same review cycle',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'p2-r2-stale-gate-'));
+  try{
+    const flowLimits={...limits,invocations:5};const flowAuth={...authorization,limits:flowLimits,allowed_agents:[...authorization.allowed_agents,'google/gemini/gemini-y/1']};
+    const ledger=newLedger(root);ledger.create(workflow);ledger.recordAuthorization(flowAuth,p1approval,p1contract);ledger.transitionWorkflowEvent('wf-1','AUTHORIZE',{});ledger.transitionWorkflowEvent('wf-1','START',{});
+    const reviewerIdentity=resolveIdentity({provider_id:'google',product:'gemini',canonical_model_id:'gemini-y',version:'1',source:'host-config',status:'DECLARED'},fullModelCatalog,{provider_id:'google',product:'gemini',model:'gemini-y',version:'1'});
+    for(const item of [{...invocation,invocation_id:'impl',role:'IMPLEMENTER' as const},{...invocation,invocation_id:'review',role:'REVIEWER' as const,identity:reviewerIdentity}]){ledger.reserveInvocation('wf-1',item.invocation_id,flowLimits);appendInvocation(ledger,item);ledger.transitionInvocation('wf-1',item.invocation_id,'START');processStart(ledger,item.invocation_id);succeedFixture(ledger,item.invocation_id);}
+    ledger.recordArtifactAuthorship('wf-1',mergeDiff,'impl','src/sum.cjs','p2-unit-test');ledger.recordArtifactReview('wf-1',mergeDiff,'review','p2-unit-test',mergeReviewHash);ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'REVIEWING'});ledger.evaluateGate('wf-1','REVIEW-GATE','p2-unit-test');
+    const newer={...invocation,invocation_id:'impl-new',role:'IMPLEMENTER' as const};ledger.reserveInvocation('wf-1',newer.invocation_id,flowLimits);appendInvocation(ledger,newer);ledger.transitionInvocation('wf-1',newer.invocation_id,'START');processStart(ledger,newer.invocation_id);succeedFixture(ledger,newer.invocation_id);ledger.recordArtifactAuthorship('wf-1','f'.repeat(64),'impl-new','src/sum.cjs','p2-unit-test');
+    assert.throws(()=>ledger.transitionWorkflowEvent('wf-1','ADVANCE_PHASE',{nextPhase:'EXECUTING'}),/HOST_GATE_REQUIRED:REVIEW-GATE/);
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('R2: blocked effects are reconciled for cancellation but never treated as successful',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'p2-r2-blocked-effect-'));
+  try{
+    const ledger=newLedger(root);setupActiveLedger(ledger);ledger.reserveInvocation('wf-1','inv-1',limits);appendInvocation(ledger,invocation);ledger.transitionInvocation('wf-1','inv-1','START');processStart(ledger,'inv-1');
+    const effect=ledger.createEffectIntent('wf-1','inv-1','WRITE',{change:'x'},'src/sum.cjs');ledger.transitionEffect('wf-1',effect.effect_id,'BLOCK');ledger.transitionWorkflowEvent('wf-1','BLOCK',{reason:'effect-blocked'});
+    ledger.recordFixtureInvocationObservation('wf-1','inv-1','PROCESS_STOPPED','f'.repeat(64),'p2-unit-test');ledger.transitionInvocation('wf-1','inv-1','CONFIRM_CANCEL');ledger.transitionWorkflowEvent('wf-1','CANCEL',{});ledger.transitionWorkflowEvent('wf-1','CONFIRM_CANCEL',{});
+    assert.equal(ledger.project('wf-1').state,'CANCELLED');assert.equal(ledger.verify('wf-1').find(e=>e.event_type==='EFFECT_INTENT')?.payload instanceof Object,true);
+    assert.throws(()=>ledger.transitionWorkflowEvent('wf-1','RESUME',{}),/EFFECTS_NEED_RECONCILIATION/);
   }finally{fs.rmSync(root,{recursive:true,force:true});}
 });
 

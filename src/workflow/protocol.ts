@@ -12,7 +12,8 @@ export function normalizeAgentMessage(input:AgentMessageInput,host:MessageHostMe
   if(Buffer.byteLength(canonicalize(body),'utf8')>1024*1024) throw Error('MESSAGE_TOO_LARGE');
   const message={...body,event_hash:canonicalHash(body)};
   const result=validator.validate('AgentMessage',message);if(!result.valid)throw Error('INVALID_AGENT_MESSAGE:'+result.errors.map(e=>e.keyword).join(','));
-  if(message.previous_event_hash!==(host.sequence===1?LEDGER_GENESIS:host.previous_event_hash)) throw Error('INVALID_PREDECESSOR');
+  if(host.sequence===1&&message.previous_event_hash!==LEDGER_GENESIS)throw Error('INVALID_PREDECESSOR');
+  if(host.sequence>1&&!/^[a-f0-9]{64}$/u.test(message.previous_event_hash))throw Error('INVALID_PREDECESSOR');
   return Object.freeze(message);
 }
 export function verifyNormalizedMessage(message:NormalizedAgentMessage):boolean {
