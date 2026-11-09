@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { canonicalHash } from '../contracts/integrity.js';
 import type { EffectRecord } from './types.js';
-export function createEffectIntent(workflowId:string,invocationId:string,operation:string,payload:unknown,now:string):EffectRecord {return Object.freeze({schema_version:'2.0-p2',effect_id:'effect-'+randomUUID(),workflow_id:workflowId,invocation_id:invocationId,operation,payload_sha256:canonicalHash(payload),state:'INTENT_RECORDED',created_at:now,observed_at:null});}
+export function createEffectIntent(workflowId:string,invocationId:string,authorizationId:string,operation:string,targetPath:string|null,sandboxBindingSha256:string|null,payload:unknown,now:string):EffectRecord {return Object.freeze({schema_version:'2.0-p2',effect_id:'effect-'+randomUUID(),workflow_id:workflowId,invocation_id:invocationId,authorization_id:authorizationId,operation,target_path:targetPath,sandbox_binding_sha256:sandboxBindingSha256,payload_sha256:canonicalHash(payload),state:'INTENT_RECORDED',created_at:now,observed_at:null});}
 export function reconcileEffect(effect:EffectRecord,event:'DISPATCH'|'OBSERVED'|'UNKNOWN'|'CONFIRM'|'BLOCK',observedAt:string|null):EffectRecord {
   if(event==='DISPATCH'&&effect.state!=='INTENT_RECORDED')throw Error('EFFECT_REDISPATCH_FORBIDDEN');
   const next:EffectRecord['state']=event==='DISPATCH'?'DISPATCHED':event==='OBSERVED'?'OBSERVED':event==='UNKNOWN'?'RECONCILIATION_REQUIRED':event==='CONFIRM'?'CONFIRMED':'BLOCKED';

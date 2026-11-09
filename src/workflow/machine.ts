@@ -9,11 +9,14 @@ function authorizationMatches(proof:AuthorizationProof|undefined,workflow:Workfl
 const terminal=new Set<WorkflowState>(['CANCELLED','REJECTED','FAILED','COMPLETED']);
 const phaseEdges:Readonly<Record<WorkflowPhase,readonly WorkflowPhase[]>>={NONE:['PLANNING'],PLANNING:['REVIEWING'],REVIEWING:['EXECUTING','PLANNING'],EXECUTING:['VALIDATING'],VALIDATING:['EXECUTING']};
 const workflowEvents:Readonly<Record<WorkflowState,readonly string[]>>={
-  CREATED:['AUTHORIZE','REJECT','CANCEL'],AUTHORIZED:['START','CANCEL','REVOKE'],ACTIVE:['ADVANCE_PHASE','REQUEST_FINAL_APPROVAL','BLOCK','FAIL','CANCEL','REVOKE'],
-  AWAITING_APPROVAL:['APPROVE','REJECT','CANCEL','REVOKE'],BLOCKED:['RESUME','FAIL','CANCEL','CANCEL_NO_EFFECT','REVOKE'],CANCEL_REQUESTED:['CONFIRM_CANCEL','CANCEL_UNCERTAIN'],
+  CREATED:['AUTHORIZE','REJECT','CANCEL'],AUTHORIZED:['START','CANCEL','REVOKE','BLOCK'],ACTIVE:['ADVANCE_PHASE','REQUEST_FINAL_APPROVAL','BLOCK','FAIL','CANCEL','REVOKE'],
+  AWAITING_APPROVAL:['APPROVE','REJECT','CANCEL','REVOKE','BLOCK'],BLOCKED:['RESUME','FAIL','CANCEL','CANCEL_NO_EFFECT','REVOKE'],CANCEL_REQUESTED:['CONFIRM_CANCEL','CANCEL_UNCERTAIN'],
   CANCELLED:[],REJECTED:[],FAILED:[],COMPLETED:[],
 };
 export function transitionWorkflow(current:WorkflowRecord,event:string,ctx:WorkflowTransitionContext={}):WorkflowRecord {
+  // Final approval is a ledger operation. This pure state helper is public and
+  // therefore must never turn caller-supplied proof-shaped data into authority.
+  if(event==='APPROVE') throw Error('USE_FINAL_APPROVAL_API');
   if(!workflowEvents[current.state].includes(event)) throw Error('INVALID_WORKFLOW_TRANSITION');
   let state:WorkflowState=current.state,phase=current.phase,authorizationId=current.authorization_id;
   let revisionCycles=current.revision_cycles,correctionCycles=current.correction_cycles;
@@ -24,7 +27,7 @@ export function transitionWorkflow(current:WorkflowRecord,event:string,ctx:Workf
     case 'START': if(!ctx.gatesReady||!gateMatches(ctx.gateProof,current,'TASK-READY')||!authorizationMatches(ctx.authorizationProof,current)) throw Error('INITIAL_GATES_REQUIRED');state='ACTIVE';phase='PLANNING';break;
     case 'ADVANCE_PHASE': {const expected=current.phase==='EXECUTING'||current.phase==='VALIDATING'?'ValidationGate':'REVIEW-GATE';if(!ctx.phaseGatePassed||!gateMatches(ctx.gateProof,current,expected)||!ctx.nextPhase||!phaseEdges[current.phase].includes(ctx.nextPhase)) throw Error('PHASE_GATE_OR_EDGE_INVALID');phase=ctx.nextPhase;if(current.phase==='REVIEWING')revisionCycles++;if((current.phase==='REVIEWING'&&ctx.nextPhase==='PLANNING')||(current.phase==='VALIDATING'&&ctx.nextPhase==='EXECUTING'))correctionCycles++;break;}
     case 'REQUEST_FINAL_APPROVAL': if(current.phase!=='VALIDATING'||!ctx.gatesReady||!gateMatches(ctx.gateProof,current,'ValidationGate')) throw Error('FINAL_VALIDATION_REQUIRED');state='AWAITING_APPROVAL';break;
-    case 'APPROVE': {const p=ctx.finalApprovalProof;if(!ctx.approvalValid||!p||!p.verified||!['HUMAN','SIMULATED_HUMAN'].includes(p.source)||p.workflow_id!==current.workflow_id||p.contract_sha256!==current.contract_sha256||!/^[a-f0-9]{64}$/.test(p.diff_sha256)||!/^[a-f0-9]{64}$/.test(p.review_sha256)||!/^[a-f0-9]{64}$/.test(p.evidence_sha256)||!p.actor||!Number.isFinite(Date.parse(p.approved_at)))throw Error('FINAL_APPROVAL_REQUIRED');state='COMPLETED';break;}
+    case 'APPROVE': throw Error('USE_FINAL_APPROVAL_API');
     case 'BLOCK': state='BLOCKED';break;
     case 'FAIL': state='FAILED';break;
     case 'REVOKE': state=current.state==='ACTIVE'?'CANCEL_REQUESTED':'BLOCKED';break;
@@ -35,6 +38,11 @@ export function transitionWorkflow(current:WorkflowRecord,event:string,ctx:Workf
   }
   if(terminal.has(current.state)) throw Error('TERMINAL_WORKFLOW');
   return Object.freeze({...current,state,phase,authorization_id:authorizationId,active_invocation_id:state==='ACTIVE'?current.active_invocation_id:null,revision_cycles:revisionCycles,correction_cycles:correctionCycles});
+}
+/** Internal projection used only after WorkflowLedger verifies a trusted P1 approval. */
+export function projectVerifiedFinalApproval(current:WorkflowRecord):WorkflowRecord {
+  if(current.state!=='AWAITING_APPROVAL'||current.phase!=='VALIDATING') throw Error('FINAL_APPROVAL_STATE_INVALID');
+  return Object.freeze({...current,state:'COMPLETED',active_invocation_id:null});
 }
 export function isWorkflowTerminal(state:WorkflowState):boolean{return terminal.has(state);}
 export function classifyLateProcessStart(current:AgentInvocationRecord):{readonly action:'CONTAIN_AND_RECONCILE';readonly invocation_id:string} {

@@ -3,23 +3,30 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { canonicalHash } from '../contracts/integrity.js';
 import { processAlive, processIdentity } from '../execution/attempts.js';
-import { transitionWorkflow } from './machine.js';
+import { transitionWorkflow, projectVerifiedFinalApproval } from './machine.js';
 import { transitionInvocation } from './machine.js';
 import { normalizeAgentMessage, verifyNormalizedMessage } from './protocol.js';
 import { createEffectIntent, reconcileEffect } from './effects.js';
-import { authorizeWorkflow, checkAuthorization, createAuthorizationProof, evaluateIndependentReview, evaluateSandboxProof, type AuthorizationBinding } from './governance.js';
-import { assertRuntimeBudgets, measureInvocationMs, measureWorkflowActiveMs, resolveEffectiveLimits } from './limits.js';
+import { authorizeWorkflow, checkAuthorization, createAuthorizationProof, createGateProof, evaluateIndependentReview, evaluateSandboxProof, resolveIdentity, canonicalAgentAuthorizationId } from './governance.js';
+import { assertRuntimeBudgets, assertOutputWithinLimit, measureInvocationMs, measureWorkflowActiveMs, resolveEffectiveLimits } from './limits.js';
 import type { TrustedApproval } from '../governance/approval.js';
 import type { ApprovalRecord, TaskContract } from '../contracts/types.js';
+import { verifyApproval } from '../governance/approval.js';
 import { createP2Validator } from './validation.js';
-import { LEDGER_GENESIS, type AgentIdentity, type AgentInvocationRecord, type AgentMessageInput, type EffectRecord, type LedgerEvent, type NormalizedAgentMessage, type SandboxValidationRecord, type WorkflowAuthorizationRecord, type WorkflowLimits, type WorkflowRecord } from './types.js';
+import { LEDGER_GENESIS, type AdapterIdentityObservation, type AgentInvocationRecord, type AgentMessageInput, type EffectRecord, type LedgerEvent, type NormalizedAgentMessage, type WorkflowAuthorizationRecord, type WorkflowLedgerOptions, type WorkflowLimits, type WorkflowRecord } from './types.js';
 
 function safeId(value:string):string {if(!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value))throw Error('INVALID_WORKFLOW_ID');return value;}
-function readEvent(file:string):LedgerEvent {return JSON.parse(fs.readFileSync(file,'utf8')) as LedgerEvent;}
+function verifyApprovalForExecution(contract:TaskContract,approval:ApprovalRecord,trusted:readonly TrustedApproval[]):boolean{return verifyApproval(contract,approval,{scope:'EXECUTION',trusted}).allowed;}
+export class WorkflowLedgerError extends Error {constructor(readonly code:string,message=code){super(message);this.name='WorkflowLedgerError';}}
+function readEvent(file:string):LedgerEvent {try{return JSON.parse(fs.readFileSync(file,'utf8')) as LedgerEvent;}catch{throw new WorkflowLedgerError('LEDGER_EVENT_INVALID');}}
+function freezeTree<T>(value:T):T {if(value&&typeof value==='object'){for(const child of Object.values(value as Record<string,unknown>))freezeTree(child);Object.freeze(value);}return value;}
 export class WorkflowLedger {
   readonly root:string;
   private readonly validator=createP2Validator();
-  constructor(root:string){fs.mkdirSync(root,{recursive:true,mode:0o700});this.root=fs.realpathSync(root);}
+  private readonly options:WorkflowLedgerOptions;
+  constructor(root:string,options:WorkflowLedgerOptions={}){fs.mkdirSync(root,{recursive:true,mode:0o700});this.root=fs.realpathSync(root);const snapshot:WorkflowLedgerOptions={...options,...(options.trusted_approvals?{trusted_approvals:freezeTree(structuredClone(options.trusted_approvals))}:{}),...(options.model_catalog?{model_catalog:freezeTree(structuredClone(options.model_catalog))}:{}),...(options.sandbox_profiles?{sandbox_profiles:freezeTree(structuredClone(options.sandbox_profiles))}:{}),...(options.sandbox_validations?{sandbox_validations:freezeTree(structuredClone(options.sandbox_validations))}:{})};this.options=Object.freeze(snapshot);}
+  private now():number{return (this.options.clock??Date.now)();}
+  private nowIso():string{return new Date(this.now()).toISOString();}
   private dir(id:string):string{return path.join(this.root,safeId(id));}
   private eventsDir(id:string):string{return path.join(this.dir(id),'events');}
   private latestAuthorization(events:readonly LedgerEvent[],authorizationId:string):{readonly record:WorkflowAuthorizationRecord;readonly proof:import('./machine.js').AuthorizationProof}|null {
@@ -33,6 +40,51 @@ export class WorkflowLedger {
     }
     return latest;
   }
+  private currentAuthorization(events:readonly LedgerEvent[]):{readonly record:WorkflowAuthorizationRecord;readonly proof:import('./machine.js').AuthorizationProof;readonly approval:ApprovalRecord;readonly contract:TaskContract;readonly trust:TrustedApproval}|null {
+    const workflow=this.projectEvents(events);if(!workflow.authorization_id)return null;
+    const event=[...events].reverse().find(e=>e.event_type==='AUTHORIZATION_RECORDED'&&(e.payload as {record:WorkflowAuthorizationRecord}).record.authorization_id===workflow.authorization_id);
+    if(!event)return null;const payload=event.payload as {record:WorkflowAuthorizationRecord;proof:import('./machine.js').AuthorizationProof;approval:ApprovalRecord;contract:TaskContract;trust:TrustedApproval};
+    const latest=this.latestAuthorization(events,workflow.authorization_id);if(!latest||latest.record.revoked_at!==null)return null;
+    return {...payload,record:latest.record};
+  }
+  private latestAvailableAuthorization(events:readonly LedgerEvent[]):NonNullable<ReturnType<WorkflowLedger['currentAuthorization']>> {
+    const event=[...events].reverse().find(e=>e.event_type==='AUTHORIZATION_RECORDED');if(!event)throw new WorkflowLedgerError('AUTHORIZATION_NOT_CURRENT');
+    const p=event.payload as {record:WorkflowAuthorizationRecord;proof:import('./machine.js').AuthorizationProof;approval:ApprovalRecord;contract:TaskContract;trust:TrustedApproval};
+    const latest=this.latestAuthorization(events,p.record.authorization_id);if(!latest||latest.record.revoked_at!==null||Date.parse(latest.record.expires_at)<=this.now())throw new WorkflowLedgerError('AUTHORIZATION_NOT_CURRENT');
+    const trusted=this.options.trusted_approvals??[];if(!trusted.some(t=>canonicalHash(t)===canonicalHash(p.trust)&&!t.revoked)||!verifyApprovalForExecution(p.contract,p.approval,trusted))throw new WorkflowLedgerError('TRUSTED_APPROVAL_REQUIRED');
+    return {...p,record:latest.record};
+  }
+  private assertCurrentAuthorization(events:readonly LedgerEvent[],requestedId?:string):NonNullable<ReturnType<WorkflowLedger['currentAuthorization']>> {
+    const auth=this.currentAuthorization(events);if(!auth||requestedId!==undefined&&requestedId!==auth.record.authorization_id)throw new WorkflowLedgerError('AUTHORIZATION_NOT_CURRENT');
+    if(Date.parse(auth.record.expires_at)<=this.now())throw new WorkflowLedgerError('AUTHORIZATION_EXPIRED');
+    const configured=this.options.trusted_approvals??[];const trust=configured.find(t=>canonicalHash(t)===canonicalHash(auth.trust)&&!t.revoked);
+    if(!trust||!verifyApprovalForExecution(auth.contract,auth.approval,configured))throw new WorkflowLedgerError('TRUSTED_APPROVAL_REQUIRED');
+    return auth;
+  }
+  private blockExpiredWorkflow(events:readonly LedgerEvent[]):void {
+    const workflow=this.projectEvents(events);if(!['AUTHORIZED','ACTIVE','AWAITING_APPROVAL'].includes(workflow.state))return;
+    const last=events.at(-1)!;const next=transitionWorkflow(workflow,'BLOCK',{reason:'AUTHORIZATION_EXPIRED'});
+    const event=this.writeEvent(workflow.workflow_id,last.sequence+1,'WORKFLOW_TRANSITION',{event:'BLOCK',context:{reason:'AUTHORIZATION_EXPIRED'},next_state:next.state,next_phase:next.phase,authorization_id:next.authorization_id},last.event_hash);
+    this.cancelActiveInvocation([...events,event],workflow.workflow_id,event);
+  }
+  private assertProgress(events:readonly LedgerEvent[],allowContainment=false):NonNullable<ReturnType<WorkflowLedger['currentAuthorization']>> {
+    const workflow=this.projectEvents(events);if(workflow.state!=='ACTIVE'&&!(allowContainment&&workflow.state==='CANCEL_REQUESTED'))throw new WorkflowLedgerError('WORKFLOW_NOT_ACTIVE');
+    let auth:NonNullable<ReturnType<WorkflowLedger['currentAuthorization']>>;
+    try{auth=this.assertCurrentAuthorization(events);}catch(error){
+      if(error instanceof WorkflowLedgerError&&error.code==='AUTHORIZATION_EXPIRED')this.blockExpiredWorkflow(events);
+      throw error;
+    }
+    const limits=resolveEffectiveLimits(auth.record.limits);const now=this.nowIso();
+    assertRuntimeBudgets(measureWorkflowActiveMs(events,now),measureInvocationMs(this.invocationsFrom(events),now),limits);return auth;
+  }
+  private latestGate(events:readonly LedgerEvent[],gate:string):{readonly authorization_id:string;readonly proof:NonNullable<Parameters<typeof transitionWorkflow>[2]>['gateProof']}|null {
+    const event=[...events].reverse().find(e=>e.event_type==='GATE_DECISION'&&(e.payload as {gate?:string}).gate===gate);if(!event)return null;
+    const p=event.payload as {gate:string;authorization_id:string;proof:NonNullable<Parameters<typeof transitionWorkflow>[2]>['gateProof'];allowed:boolean};return p.allowed?p:null;
+  }
+  private cancelActiveInvocation(events:readonly LedgerEvent[],workflowId:string,last:LedgerEvent):void {
+    const invocation=this.invocationsFrom(events).find(i=>['STARTING','RUNNING'].includes(i.state));if(!invocation)return;
+    const record=transitionInvocation(invocation,'CANCEL',{observedAt:this.nowIso()});this.writeEvent(workflowId,last.sequence+1,'INVOCATION_TRANSITION',{invocation_id:invocation.invocation_id,event:'CANCEL',context:{observedAt:this.nowIso()},record},last.event_hash);
+  }
   create(workflow:WorkflowRecord):LedgerEvent {
     if(workflow.state!=='CREATED'||workflow.phase!=='NONE')throw Error('INITIAL_WORKFLOW_REQUIRED');
     if(!this.validator.validate('Workflow',workflow).valid)throw Error('INVALID_WORKFLOW');
@@ -40,10 +92,11 @@ export class WorkflowLedger {
     return this.writeEvent(workflow.workflow_id,0,'WORKFLOW_CREATED',workflow,LEDGER_GENESIS);
   }
   private writeEvent(id:string,sequence:number,event_type:string,payload:unknown,previous_event_hash:string):LedgerEvent {
-    const body={event_id:'evt-'+randomUUID(),workflow_id:id,sequence,event_type,payload,observed_at:new Date().toISOString(),previous_event_hash};
+    const body={event_id:'evt-'+randomUUID(),workflow_id:id,sequence,event_type,payload,observed_at:this.nowIso(),previous_event_hash};
     const event={...body,event_hash:canonicalHash(body)};
     const file=path.join(this.eventsDir(id),String(sequence).padStart(8,'0')+'.json');
-    const fd=fs.openSync(file,'wx',0o600);try{fs.writeFileSync(fd,JSON.stringify(event)+'\n');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+    const temp=path.join(this.eventsDir(id),'.pending-'+randomUUID()+'.tmp');let fd:number|undefined;
+    try{fd=fs.openSync(temp,'wx',0o600);fs.writeFileSync(fd,JSON.stringify(event)+'\n');fs.fsyncSync(fd);fs.closeSync(fd);fd=undefined;fs.linkSync(temp,file);}catch(error){throw new WorkflowLedgerError('LEDGER_APPEND_FAILED',error instanceof Error?error.message:'Ledger append failed');}finally{if(fd!==undefined)try{fs.closeSync(fd);}catch{}try{fs.unlinkSync(temp);}catch{}}
     const dirFd=fs.openSync(this.eventsDir(id),'r');try{fs.fsyncSync(dirFd);}finally{fs.closeSync(dirFd);}
     return Object.freeze(event);
   }
@@ -55,18 +108,20 @@ export class WorkflowLedger {
       let recoveryFd:number;try{recoveryFd=fs.openSync(recovery,'wx',0o600);}catch{throw Error('LEDGER_RECOVERY_LOCKED');}
       try{
         const stat=fs.lstatSync(lock);if(!stat.isFile()||stat.isSymbolicLink())throw Error('LEDGER_LOCK_UNTRUSTED');
-        const owner=JSON.parse(fs.readFileSync(lock,'utf8')) as {nonce?:unknown;identity?:import('../contracts/types.js').ProcessIdentity};
-        if(typeof owner.nonce!=='string'||!owner.identity||processAlive(owner.identity))throw Error('LEDGER_LOCKED');
+        let owner:{nonce?:unknown;identity?:import('../contracts/types.js').ProcessIdentity};try{owner=JSON.parse(fs.readFileSync(lock,'utf8')) as typeof owner;}catch{throw new WorkflowLedgerError('LEDGER_LOCK_MALFORMED');}
+        if(typeof owner.nonce!=='string'||!owner.nonce||!owner.identity||!Number.isSafeInteger(owner.identity.pid)||owner.identity.pid<1||typeof owner.identity.process_start_token!=='string'||!owner.identity.process_start_token||(owner.identity.executable!==undefined&&typeof owner.identity.executable!=='string'))throw new WorkflowLedgerError('LEDGER_LOCK_MALFORMED');
+        if(processAlive(owner.identity))throw Error('LEDGER_LOCKED');
         const archived=lock+'.abandoned-'+owner.nonce;if(fs.existsSync(archived))throw Error('LEDGER_STALE_LOCK_ARCHIVE_EXISTS');
         fs.renameSync(lock,archived);
       }finally{fs.closeSync(recoveryFd);try{fs.unlinkSync(recovery);}catch{}}
       try{fd=fs.openSync(lock,'wx',0o600);}catch{throw Error('LEDGER_LOCKED');}
     }
-    try{fs.writeFileSync(fd,JSON.stringify({nonce:randomUUID(),identity:processIdentity(process.pid)}));fs.fsyncSync(fd);return operation(this.verify(id));}
+    try{fs.writeFileSync(fd,JSON.stringify({nonce:randomUUID(),identity:processIdentity(process.pid)}));fs.fsyncSync(fd);this.removeAbandonedTemps(id);return operation(this.verify(id));}
     finally{try{fs.closeSync(fd!);}catch{}try{fs.unlinkSync(lock);}catch{}}
   }
+  private removeAbandonedTemps(id:string):void {for(const name of fs.readdirSync(this.eventsDir(id)).filter(n=>n.startsWith('.pending-')&&n.endsWith('.tmp'))){const file=path.join(this.eventsDir(id),name);const stat=fs.lstatSync(file);if(!stat.isFile()||stat.isSymbolicLink())throw new WorkflowLedgerError('LEDGER_TEMP_UNTRUSTED');fs.unlinkSync(file);}}
   append(id:string,event_type:string,payload:unknown):LedgerEvent {
-    if(['WORKFLOW_TRANSITION','INVOCATION_RESERVED','INVOCATION_CREATED','INVOCATION_TRANSITION','AGENT_MESSAGE','EFFECT_INTENT','EFFECT_TRANSITION','AUTHORIZATION_RECORDED','AUTHORIZATION_REVOKED','ARTIFACT_AUTHORED','ARTIFACT_REVIEWED'].includes(event_type))throw Error('USE_TYPED_LEDGER_API');
+    if(['WORKFLOW_TRANSITION','INVOCATION_RESERVED','INVOCATION_CREATED','INVOCATION_TRANSITION','AGENT_MESSAGE','EFFECT_INTENT','EFFECT_TRANSITION','AUTHORIZATION_RECORDED','AUTHORIZATION_REVOKED','AUTHORIZATION_SELECTED','ARTIFACT_AUTHORED','ARTIFACT_REVIEWED','GATE_DECISION','HOST_EVIDENCE','INVOCATION_OBSERVATION','FINAL_APPROVAL_RECORDED','P1_PR_GATE_VERIFIED'].includes(event_type))throw Error('USE_TYPED_LEDGER_API');
     return this.withLock(id,events=>{
       const last=events.at(-1)!;
       return this.writeEvent(id,last.sequence+1,event_type,payload,last.event_hash);
@@ -74,48 +129,71 @@ export class WorkflowLedger {
   }
   transitionWorkflowEvent(id:string,event:string,context:NonNullable<Parameters<typeof transitionWorkflow>[2]>):LedgerEvent {
     if(event==='REVOKE')throw Error('USE_REVOCATION_API');
+    if(event==='APPROVE')throw new WorkflowLedgerError('USE_FINAL_APPROVAL_API');
     return this.withLock(id,events=>{
-      const prior=this.projectEvents(events);let effective=context;
-      if(['AUTHORIZE','RESUME','START','ADVANCE_PHASE','REQUEST_FINAL_APPROVAL'].includes(event)){
-        const proof=context.authorizationProof;if(!proof)throw Error('AUTHORIZATION_PROOF_REQUIRED');
-        const stored=this.latestAuthorization(events,proof.authorization_id);
-        if(!stored||stored.record.revoked_at!==null||canonicalHash(stored.proof)!==canonicalHash(proof)||stored.record.workflow_id!==prior.workflow_id||stored.record.contract_sha256!==prior.contract_sha256||Date.parse(stored.record.expires_at)<=Date.now())throw Error('AUTHORIZATION_NOT_CURRENT');
-        effective={...context,authorizationValid:true,authorizationId:stored.record.authorization_id};
+      const prior=this.projectEvents(events);let effective={...context};
+      if(['START','ADVANCE_PHASE','REQUEST_FINAL_APPROVAL'].includes(event)){
+        if(event==='START')try{this.assertCurrentAuthorization(events);}catch(error){if(error instanceof WorkflowLedgerError&&error.code==='AUTHORIZATION_EXPIRED')this.blockExpiredWorkflow(events);throw error;}
+        else this.assertProgress(events);
       }
+      if(event==='RESUME')this.assertCurrentAuthorization(events);
+      if(['AUTHORIZE','RESUME','START','ADVANCE_PHASE','REQUEST_FINAL_APPROVAL'].includes(event)){
+        const auth=event==='AUTHORIZE'?this.latestAvailableAuthorization(events):this.assertCurrentAuthorization(events);const proof=auth.proof;
+        effective={...effective,authorizationProof:proof,authorizationValid:true,authorizationId:auth.record.authorization_id};
+      }
+      const requiredGate=event==='START'?'TASK-READY':event==='ADVANCE_PHASE'?(prior.phase==='EXECUTING'||prior.phase==='VALIDATING'?'ValidationGate':'REVIEW-GATE'):event==='REQUEST_FINAL_APPROVAL'?'ValidationGate':null;
+      if(requiredGate){const gate=this.latestGate(events,requiredGate);if(!gate?.proof||gate.authorization_id!==this.assertCurrentAuthorization(events).record.authorization_id)throw new WorkflowLedgerError('HOST_GATE_REQUIRED:'+requiredGate);effective={...effective,gatesReady:true,phaseGatePassed:true,gateProof:gate.proof};}
       if(event==='REQUEST_FINAL_APPROVAL'||event==='CONFIRM_CANCEL'){
         const invocations=this.invocationsFrom(events);const pending=invocations.some(i=>!this.invocationSettled(events,i));
         if(event==='REQUEST_FINAL_APPROVAL'&&invocations.some(i=>i.state!=='SUCCEEDED'))throw Error('INVOCATIONS_NOT_SUCCESSFUL');
         const unresolved=this.effectsFrom(events).some(e=>['INTENT_RECORDED','DISPATCHED','OBSERVED','UNKNOWN','RECONCILIATION_REQUIRED','BLOCKED'].includes(e.state));
         if(pending||unresolved)throw Error('EFFECTS_OR_PROCESSES_UNRECONCILED');
       }
+      const pendingEffects=this.effectsFrom(events).some(e=>e.state!=='CONFIRMED');const pendingProcesses=this.invocationsFrom(events).some(i=>!this.invocationSettled(events,i));
+      if(event==='CANCEL'||event==='CANCEL_NO_EFFECT')effective={...effective,noPendingEffects:!pendingEffects&&!pendingProcesses};
+      if(event==='CONFIRM_CANCEL')effective={...effective,reconciled:!pendingEffects&&!pendingProcesses};
       if(event==='ADVANCE_PHASE'||event==='RESUME'||event==='START')this.assertNoUnresolvedEffects(events);
       if(event==='RESUME'&&this.invocationsFrom(events).some(i=>!this.invocationSettled(events,i)))throw Error('INVOCATIONS_NEED_RECONCILIATION');
       if(event==='RESUME'&&this.effectsFrom(events).some(e=>e.state!=='CONFIRMED'))throw Error('EFFECTS_NEED_RECONCILIATION');
       if(event==='AUTHORIZE'||event==='RESUME'){
         const proof=effective.authorizationProof!;if(!events.some(e=>e.event_type==='AUTHORIZATION_RECORDED'&&(e.payload as {record:WorkflowAuthorizationRecord}).record.authorization_id===proof.authorization_id))throw Error('AUTHORIZATION_NOT_PERSISTED');
       }
-      const next=transitionWorkflow(prior,event,effective);const last=events.at(-1)!;
+      if(event==='AUTHORIZE'&&!this.latestGate(events,'TASK-READY'))throw new WorkflowLedgerError('TASK_READY_REQUIRED');
+      if(event==='RESUME'){
+        const taskReady=this.latestGate(events,'TASK-READY');if(!taskReady||taskReady.authorization_id!==this.assertCurrentAuthorization(events).record.authorization_id)throw new WorkflowLedgerError('TASK_READY_REQUIRED');
+      }
+      const next=transitionWorkflow(prior,event,effective);let last=events.at(-1)!;
       if(event==='ADVANCE_PHASE'){
         const auth=this.latestAuthorization(events,effective.authorizationProof?.authorization_id??'');if(!auth)throw Error('AUTHORIZATION_NOT_CURRENT');
         const limits=resolveEffectiveLimits(auth.record.limits);
         if(next.revision_cycles>limits.review_cycles||next.correction_cycles>limits.correction_cycles)throw Error('CYCLE_LIMIT_EXCEEDED');
       }
-      return this.writeEvent(id,last.sequence+1,'WORKFLOW_TRANSITION',{event,context:effective,next_state:next.state,next_phase:next.phase,authorization_id:next.authorization_id},last.event_hash);
+      const transition=this.writeEvent(id,last.sequence+1,'WORKFLOW_TRANSITION',{event,context:effective,next_state:next.state,next_phase:next.phase,authorization_id:next.authorization_id},last.event_hash);last=transition;
+      if(event==='BLOCK'||event==='CANCEL'||event==='FAIL')this.cancelActiveInvocation(events, id, last);
+      return transition;
     });
   }
-  recordAuthorization(record:WorkflowAuthorizationRecord,approval:ApprovalRecord,contract:TaskContract,trusted:readonly TrustedApproval[],verifiedAt:string):import('./machine.js').AuthorizationProof {
+  recordAuthorization(record:WorkflowAuthorizationRecord,approval:ApprovalRecord,contract:TaskContract,_callerTimestamp?:string):import('./machine.js').AuthorizationProof {
     return this.withLock(record.workflow_id,events=>{
-      if(!['CREATED','BLOCKED'].includes(this.projectEvents(events).state))throw Error('AUTHORIZATION_STATE_INVALID');
+      const state=this.projectEvents(events).state;if(!['CREATED','BLOCKED'].includes(state))throw Error('AUTHORIZATION_STATE_INVALID');
+      const initial=events[0]?.payload as WorkflowRecord|undefined;if(!initial||initial.contract_sha256!==record.contract_sha256||initial.repository!==record.repository||initial.baseline_git!==record.baseline_git||initial.worktree!==record.worktree)throw new WorkflowLedgerError('WORKFLOW_AUTHORIZATION_BINDING_MISMATCH');
+      if(events.some(e=>e.event_type==='AUTHORIZATION_RECORDED'&&(e.payload as {record:WorkflowAuthorizationRecord}).record.authorization_id===record.authorization_id))throw Error('AUTHORIZATION_ID_REUSED');
+      const trusted=this.options.trusted_approvals??[];
+      const old=this.currentAuthorization(events);if(old&&old.record.authorization_id!==record.authorization_id&&old.record.revoked_at===null&&Date.parse(old.record.expires_at)>this.now())throw new WorkflowLedgerError('AUTHORIZATION_REPLACEMENT_REQUIRES_REVOCATION');
       const result=authorizeWorkflow(record,approval,contract,trusted);if(!result.allowed)throw Error('AUTHORIZATION_REJECTED:'+result.reasons.join(','));
-      const proof=createAuthorizationProof(record,approval,contract,trusted,verifiedAt);const trust=trusted.find(t=>t.record_sha256===canonicalHash(approval)&&!t.revoked);
+      const verifiedAt=this.nowIso();const proof=createAuthorizationProof(record,approval,contract,trusted,verifiedAt);const trust=trusted.find(t=>t.record_sha256===canonicalHash(approval)&&!t.revoked);
       if(!trust)throw Error('TRUSTED_APPROVAL_REQUIRED');
-      const last=events.at(-1)!;this.writeEvent(record.workflow_id,last.sequence+1,'AUTHORIZATION_RECORDED',{record,approval,contract,trust,proof},last.event_hash);return proof;
+      let last=events.at(-1)!;last=this.writeEvent(record.workflow_id,last.sequence+1,'AUTHORIZATION_RECORDED',{record,approval,contract,trust,proof},last.event_hash);
+      const taskReady=createGateProof('TASK-READY',record.workflow_id,record.contract_sha256,{allowed:true,contract_sha256:record.contract_sha256},verifiedAt,'HOST');
+      last=this.writeEvent(record.workflow_id,last.sequence+1,'GATE_DECISION',{gate:'TASK-READY',authorization_id:record.authorization_id,allowed:true,proof:taskReady,evidence_sha256:canonicalHash({approval:record.approval_record_sha256,contract:record.contract_sha256,baseline:record.baseline_git})},last.event_hash);
+      if(state==='BLOCKED')this.writeEvent(record.workflow_id,last.sequence+1,'AUTHORIZATION_SELECTED',{authorization_id:record.authorization_id,workflow_id:record.workflow_id},last.event_hash);
+      return proof;
     });
   }
-  revokeAuthorization(workflowId:string,authorizationId:string,revokedAt:string):LedgerEvent {
+  revokeAuthorization(workflowId:string,authorizationId:string,_untrustedTimestamp?:string):LedgerEvent {
     return this.withLock(workflowId,events=>{
       const state=this.projectEvents(events);if(state.authorization_id!==authorizationId)throw Error('AUTHORIZATION_BINDING_MISMATCH');
-      if(!Number.isFinite(Date.parse(revokedAt)))throw Error('INVALID_REVOCATION_TIME');
+      const revokedAt=this.nowIso();
       if(!['AUTHORIZED','ACTIVE','AWAITING_APPROVAL','BLOCKED'].includes(state.state))throw Error('REVOCATION_NOT_ALLOWED');
       const current=this.latestAuthorization(events,authorizationId);if(!current||current.record.revoked_at!==null)throw Error('AUTHORIZATION_NOT_CURRENT');
       const revoked={...current.record,revoked_at:revokedAt};let last=events.at(-1)!;
@@ -127,95 +205,186 @@ export class WorkflowLedger {
   }
   reserveInvocation(id:string,invocationId:string,limits:WorkflowLimits):LedgerEvent {
     return this.withLock(id,events=>{
-      if(this.projectEvents(events).state!=='ACTIVE')throw Error('WORKFLOW_NOT_ACTIVE');
+      const auth=this.assertProgress(events);
       this.assertNoUnresolvedEffects(events);
-      const auth=this.latestAuthorization(events,this.projectEvents(events).authorization_id??'');if(!auth||auth.record.revoked_at!==null||canonicalHash(auth.record.limits)!==canonicalHash(limits))throw Error('AUTHORIZATION_LIMITS_MISMATCH');
+      if(canonicalHash(auth.record.limits)!==canonicalHash(limits))throw Error('AUTHORIZATION_LIMITS_MISMATCH');
+      const existing=events.find(e=>e.event_type==='INVOCATION_RESERVED'&&(e.payload as {invocation_id?:string}).invocation_id===invocationId);if(existing)return existing;
       const count=events.filter(e=>e.event_type==='INVOCATION_RESERVED').length;const effective=resolveEffectiveLimits(limits);
       if(count>=effective.invocations)throw Error('INVOCATION_LIMIT_EXCEEDED');
       const last=events.at(-1)!;return this.writeEvent(id,last.sequence+1,'INVOCATION_RESERVED',{invocation_id:invocationId,reservation_number:count+1,limit:effective.invocations},last.event_hash);
     });
   }
-  createEffectIntent(workflowId:string,invocationId:string,operation:string,payload:unknown,authorization:WorkflowAuthorizationRecord,binding:AuthorizationBinding,agent:AgentIdentity,targetPath?:string,sandboxProof?:SandboxValidationRecord|null,sandboxExpected?:Parameters<typeof evaluateSandboxProof>[1]):EffectRecord {
+  createEffectIntent(workflowId:string,invocationId:string,operation:string,payload:unknown,targetPath?:string):EffectRecord {
     return this.withLock(workflowId,events=>{
-      if(this.projectEvents(events).state!=='ACTIVE')throw Error('WORKFLOW_NOT_ACTIVE');
+      const current=this.assertProgress(events);
       this.assertNoUnresolvedEffects(events);
-      const stored=this.latestAuthorization(events,authorization.authorization_id);if(!stored||stored.record.revoked_at!==null||canonicalHash(stored.record)!==canonicalHash(authorization))throw Error('AUTHORIZATION_NOT_CURRENT');
-      const auth=checkAuthorization(authorization,binding,new Date().toISOString(),operation,agent,targetPath);if(!auth.allowed)throw Error('EFFECT_UNAUTHORIZED:'+auth.reasons.join(','));
-      if(['WRITE','COMMIT'].includes(operation)&&(!sandboxExpected||!evaluateSandboxProof(sandboxProof??null,sandboxExpected,new Date().toISOString()).allowed))throw Error('SANDBOX_PROOF_REQUIRED');
-      const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='RUNNING')throw Error('INVOCATION_NOT_RUNNING');
-      const effect=createEffectIntent(workflowId,invocationId,operation,payload,new Date().toISOString());if(events.some(e=>e.event_type==='EFFECT_INTENT'&&(e.payload as EffectRecord).effect_id===effect.effect_id))throw Error('DUPLICATE_EFFECT_ID');
+      const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='RUNNING'||invocation.identity.status!=='VERIFIED')throw Error('INVOCATION_NOT_RUNNING_OR_VERIFIED');
+      if(!['READ','WRITE','TEST','LOCAL_COMMIT'].includes(operation))throw Error('OPERATION_NOT_IN_P2_POLICY');
+      const forbidden=current.contract.scope.forbidden_changes;
+      const allowed=checkAuthorization(current.record,{workflow_id:workflowId,contract_sha256:current.record.contract_sha256,repository:current.record.repository,baseline_git:current.record.baseline_git,worktree:current.record.worktree},this.nowIso(),operation,invocation.identity,targetPath,forbidden);
+      if(!allowed.allowed)throw new WorkflowLedgerError('EFFECT_UNAUTHORIZED:'+allowed.reasons.join(','));
+      let sandboxBinding:string|null=null;
+      if(['WRITE','LOCAL_COMMIT'].includes(operation)){
+        const key=canonicalAgentAuthorizationId(invocation.identity),profile=this.options.sandbox_profiles?.[key];
+        if(!profile)throw new WorkflowLedgerError('SANDBOX_PROFILE_NOT_CONFIGURED');
+        const expected={provider_id:invocation.identity.provider_id,product:invocation.identity.product,version:invocation.identity.version??'',...profile};
+        const candidate=(this.options.sandbox_validations??[]).find(p=>canonicalHash({provider_id:p.provider_id,product:p.product,version:p.version,configuration_hash:p.configuration_hash,profile_hash:p.profile_hash,permissions_hash:p.permissions_hash,evidence_hash:p.evidence_hash})===canonicalHash(expected));
+        if(!candidate||!evaluateSandboxProof(candidate,expected,this.nowIso()).allowed)throw new WorkflowLedgerError('SANDBOX_PROOF_REQUIRED');sandboxBinding=canonicalHash(candidate);
+      }
+      const effect=createEffectIntent(workflowId,invocationId,current.record.authorization_id,operation,targetPath??null,sandboxBinding,payload,this.nowIso());if(events.some(e=>e.event_type==='EFFECT_INTENT'&&(e.payload as EffectRecord).effect_id===effect.effect_id))throw Error('DUPLICATE_EFFECT_ID');
       const last=events.at(-1)!;this.writeEvent(workflowId,last.sequence+1,'EFFECT_INTENT',effect,last.event_hash);return effect;
     });
   }
-  transitionEffect(workflowId:string,effectId:string,event:'DISPATCH'|'OBSERVED'|'UNKNOWN'|'CONFIRM'|'BLOCK',authorization:WorkflowAuthorizationRecord,binding:AuthorizationBinding,agent:AgentIdentity,targetPath?:string,sandboxProof?:SandboxValidationRecord|null,sandboxExpected?:Parameters<typeof evaluateSandboxProof>[1]):EffectRecord {
+  transitionEffect(workflowId:string,effectId:string,event:'DISPATCH'|'OBSERVED'|'UNKNOWN'|'CONFIRM'|'BLOCK'):EffectRecord {
     return this.withLock(workflowId,events=>{
       const current=this.effectsFrom(events).find(e=>e.effect_id===effectId);if(!current)throw Error('EFFECT_NOT_FOUND');
       if(event==='DISPATCH'){
-        if(this.projectEvents(events).state!=='ACTIVE')throw Error('WORKFLOW_NOT_ACTIVE');
-        const stored=this.latestAuthorization(events,authorization.authorization_id);if(!stored||stored.record.revoked_at!==null||canonicalHash(stored.record)!==canonicalHash(authorization))throw Error('AUTHORIZATION_NOT_CURRENT');
-        const auth=checkAuthorization(authorization,binding,new Date().toISOString(),current.operation,agent,targetPath);if(!auth.allowed)throw Error('EFFECT_UNAUTHORIZED:'+auth.reasons.join(','));
-        if(['WRITE','COMMIT'].includes(current.operation)&&(!sandboxExpected||!evaluateSandboxProof(sandboxProof??null,sandboxExpected,new Date().toISOString()).allowed))throw Error('SANDBOX_PROOF_REQUIRED');
+        const auth=this.assertProgress(events);
+        if(auth.record.authorization_id!==current.authorization_id)throw new WorkflowLedgerError('AUTHORIZATION_NOT_CURRENT');
+        const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===current.invocation_id);if(!invocation||invocation.state!=='RUNNING')throw Error('INVOCATION_NOT_RUNNING');
+        const allowed=checkAuthorization(auth.record,{workflow_id:workflowId,contract_sha256:auth.record.contract_sha256,repository:auth.record.repository,baseline_git:auth.record.baseline_git,worktree:auth.record.worktree},this.nowIso(),current.operation,invocation.identity,current.target_path??undefined,auth.contract.scope.forbidden_changes);
+        if(!allowed.allowed)throw new WorkflowLedgerError('EFFECT_UNAUTHORIZED:'+allowed.reasons.join(','));
+        if(['WRITE','LOCAL_COMMIT'].includes(current.operation)){
+          const key=canonicalAgentAuthorizationId(invocation.identity),profile=this.options.sandbox_profiles?.[key],proof=(this.options.sandbox_validations??[]).find(p=>canonicalHash(p)===current.sandbox_binding_sha256);
+          if(!profile||!proof||!evaluateSandboxProof(proof,{provider_id:invocation.identity.provider_id,product:invocation.identity.product,version:invocation.identity.version??'',...profile},this.nowIso()).allowed)throw new WorkflowLedgerError('SANDBOX_PROOF_REQUIRED');
+        }
       }
       if(event==='DISPATCH'&&current.state!=='INTENT_RECORDED')throw Error('EFFECT_REDISPATCH_FORBIDDEN');
-      const next=reconcileEffect(current,event,event==='DISPATCH'?null:new Date().toISOString());const last=events.at(-1)!;
+      const next=reconcileEffect(current,event,event==='DISPATCH'?null:this.nowIso());const last=events.at(-1)!;
       this.writeEvent(workflowId,last.sequence+1,'EFFECT_TRANSITION',{effect_id:effectId,event,record:next},last.event_hash);return next;
     });
   }
   markDispatchedEffectsUncertain(workflowId:string):readonly EffectRecord[] {
     return this.withLock(workflowId,events=>{
       const pending=this.effectsFrom(events).filter(e=>e.state==='DISPATCHED'||e.state==='INTENT_RECORDED');const updated:EffectRecord[]=[];let last=events.at(-1)!;
-      for(const effect of pending){const next=reconcileEffect(effect,'UNKNOWN',new Date().toISOString());last=this.writeEvent(workflowId,last.sequence+1,'EFFECT_TRANSITION',{effect_id:effect.effect_id,event:'UNKNOWN',record:next},last.event_hash);updated.push(next);}
+      for(const effect of pending){const next=reconcileEffect(effect,'UNKNOWN',this.nowIso());last=this.writeEvent(workflowId,last.sequence+1,'EFFECT_TRANSITION',{effect_id:effect.effect_id,event:'UNKNOWN',record:next},last.event_hash);updated.push(next);}
       return Object.freeze(updated);
     });
   }
   recover(workflowId:string):{readonly state:WorkflowRecord['state'];readonly pending_invocations:readonly string[];readonly pending_effects:readonly string[]} {
     let events=this.verify(workflowId);let workflow=this.projectEvents(events);
-    if(['COMPLETED','FAILED','REJECTED','CANCELLED'].includes(workflow.state))return Object.freeze({state:workflow.state,pending_invocations:Object.freeze([]),pending_effects:Object.freeze([])});
-    const effects=this.effectsFrom(events);if(effects.some(e=>e.state==='INTENT_RECORDED'||e.state==='DISPATCHED'))this.markDispatchedEffectsUncertain(workflowId);
+    const terminal=['COMPLETED','FAILED','REJECTED','CANCELLED'].includes(workflow.state);
+    const effects=this.effectsFrom(events);if(!terminal&&effects.some(e=>e.state==='INTENT_RECORDED'||e.state==='DISPATCHED'))this.markDispatchedEffectsUncertain(workflowId);
     events=this.verify(workflowId);workflow=this.projectEvents(events);
     const pendingInvocations=this.invocationsFrom(events).filter(i=>!this.invocationSettled(events,i)).map(i=>i.invocation_id);
     const pendingEffects=this.effectsFrom(events).filter(e=>e.state!=='CONFIRMED').map(e=>e.effect_id);
-    if((pendingInvocations.length||pendingEffects.length)&&workflow.state==='ACTIVE')this.transitionWorkflowEvent(workflowId,'BLOCK',{reason:'RECOVERY_RECONCILIATION_REQUIRED'});
+    if((pendingInvocations.length||pendingEffects.length)&&!terminal&&workflow.state==='ACTIVE')this.transitionWorkflowEvent(workflowId,'BLOCK',{reason:'RECOVERY_RECONCILIATION_REQUIRED'});
     events=this.verify(workflowId);workflow=this.projectEvents(events);
-    if((pendingInvocations.length||pendingEffects.length)&&!events.some(e=>e.event_type==='WORKFLOW_RECOVERY_REQUIRED'))this.append(workflowId,'WORKFLOW_RECOVERY_REQUIRED',{pending_invocation_ids:pendingInvocations,pending_effect_ids:pendingEffects,observed_at:new Date().toISOString()});
+    if((pendingInvocations.length||pendingEffects.length)&&!events.some(e=>e.event_type==='WORKFLOW_RECOVERY_REQUIRED'))this.append(workflowId,'WORKFLOW_RECOVERY_REQUIRED',{pending_invocation_ids:pendingInvocations,pending_effect_ids:pendingEffects,terminal_state:terminal?workflow.state:null,observed_at:this.nowIso()});
     return Object.freeze({state:workflow.state,pending_invocations:Object.freeze(pendingInvocations),pending_effects:Object.freeze(pendingEffects)});
   }
-  appendInvocation(invocation:AgentInvocationRecord):LedgerEvent {
+  appendInvocation(invocation:AgentInvocationRecord,observation?:AdapterIdentityObservation):LedgerEvent {
     return this.withLock(invocation.workflow_id,events=>{
       if(!this.validator.validate('AgentInvocation',invocation).valid||invocation.state!=='CREATED')throw Error('INVALID_INVOCATION');
-      if(invocation.identity.status==='VERIFIED'&&(!invocation.identity.catalog_hash||!/^[a-f0-9]{64}$/.test(invocation.identity.catalog_hash)))throw Error('VERIFIED_IDENTITY_NEEDS_CATALOG_HASH');
-      if(this.projectEvents(events).state!=='ACTIVE')throw Error('WORKFLOW_NOT_ACTIVE');
+      const auth=this.assertProgress(events);const catalog=this.options.model_catalog;if(!catalog||!observation)throw new WorkflowLedgerError('HOST_IDENTITY_OBSERVATION_REQUIRED');
+      if(!this.options.fixture_id)throw new WorkflowLedgerError('REAL_ADAPTER_NOT_ENABLED_IN_P2_001');
+      const {catalog_hash:_claimedHash,...declared}=invocation.identity;
+      const resolved=resolveIdentity({...declared,status:'DECLARED'},catalog,observation);
+      if(resolved.status!=='VERIFIED'||resolved.catalog_hash!==catalog.catalog_hash)throw new WorkflowLedgerError('AGENT_IDENTITY_NOT_VERIFIED');
+      if(!auth.record.allowed_agents.includes(canonicalAgentAuthorizationId(resolved)))throw new WorkflowLedgerError('AGENT_NOT_AUTHORIZED');
+      const hostInvocation={...invocation,identity:resolved};
       const prior=this.invocationsFrom(events);
       if(prior.some(i=>i.invocation_id===invocation.invocation_id))throw Error('DUPLICATE_INVOCATION');
       if(prior.some(i=>['STARTING','RUNNING','CANCEL_REQUESTED'].includes(i.state)))throw Error('ACTIVE_INVOCATION_EXISTS');
       if(!events.some(e=>e.event_type==='INVOCATION_RESERVED'&&(e.payload as {invocation_id?:string}).invocation_id===invocation.invocation_id))throw Error('INVOCATION_NOT_RESERVED');
-      const last=events.at(-1)!;return this.writeEvent(invocation.workflow_id,last.sequence+1,'INVOCATION_CREATED',invocation,last.event_hash);
+      const last=events.at(-1)!;return this.writeEvent(invocation.workflow_id,last.sequence+1,'INVOCATION_CREATED',hostInvocation,last.event_hash);
     });
   }
-  transitionInvocation(workflowId:string,invocationId:string,event:string,context:Parameters<typeof transitionInvocation>[2]={}):LedgerEvent {
+  recordFixtureInvocationObservation(workflowId:string,invocationId:string,kind:'PROCESS_STARTED'|'PROCESS_STOPPED'|'TERMINAL_RESULT',evidenceSha256:string,fixtureId:string):LedgerEvent {
+    if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
+    if(!/^[a-f0-9]{64}$/.test(evidenceSha256))throw new WorkflowLedgerError('OBSERVATION_EVIDENCE_REQUIRED');
+    return this.withLock(workflowId,events=>{
+      const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation)throw new WorkflowLedgerError('INVOCATION_NOT_FOUND');
+      if(kind==='PROCESS_STOPPED'){
+        const workflow=this.projectEvents(events);if(workflow.state!=='ACTIVE'&&(!['CANCEL_REQUESTED','BLOCKED'].includes(workflow.state)||!['CANCEL_REQUESTED','RUNNING','STARTING'].includes(invocation.state)))throw new WorkflowLedgerError('CONTAINMENT_NOT_ALLOWED');
+      }else this.assertProgress(events);
+      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'INVOCATION_OBSERVATION',{invocation_id:invocationId,kind,evidence_sha256:evidenceSha256,fixture_id:fixtureId,observed_at:this.nowIso()},last.event_hash);
+    });
+  }
+  transitionInvocation(workflowId:string,invocationId:string,event:string,_untrustedContext:Parameters<typeof transitionInvocation>[2]={}):LedgerEvent {
     return this.withLock(workflowId,events=>{
       const current=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!current)throw Error('INVOCATION_NOT_FOUND');
+      void _untrustedContext;
       const workflow=this.projectEvents(events);const authorization=this.latestAuthorization(events,workflow.authorization_id??'');
-      const revoked=!!authorization&&authorization.record.revoked_at!==null;
-      if(revoked&&!['CONFIRM_CANCEL','RESULT_UNCERTAIN','RESULT_FAILURE','INTERRUPTED','PROCESS_STARTED'].includes(event))throw Error('AUTHORIZATION_REVOKED');
-      if(revoked&&event==='PROCESS_STARTED')throw Error('LATE_PROCESS_REQUIRES_CONTAINMENT');
-      const effectiveContext={...context,observedAt:context.observedAt??new Date().toISOString(),revocationPending:revoked||context.revocationPending===true};
+      const revoked=!!authorization&&authorization.record.revoked_at!==null;const containment=['CONFIRM_CANCEL','RESULT_UNCERTAIN','RESULT_FAILURE','INTERRUPTED'].includes(event);
+      if(revoked&&!containment)throw new WorkflowLedgerError('AUTHORIZATION_REVOKED');
+      if(workflow.state!=='ACTIVE'&&!containment)throw new WorkflowLedgerError('WORKFLOW_NOT_ACTIVE');
+      if(['START','PROCESS_STARTED','RESULT_SUCCESS'].includes(event))this.assertProgress(events);
+      if(event==='START'&&!this.options.fixture_id)throw new WorkflowLedgerError('REAL_ADAPTER_NOT_ENABLED_IN_P2_001');
+      const observations=events.filter(e=>e.event_type==='INVOCATION_OBSERVATION'&&(e.payload as {invocation_id:string}).invocation_id===invocationId).map(e=>e.payload as {kind:string;evidence_sha256:string;fixture_id:string});
+      const processStarted=observations.some(o=>o.kind==='PROCESS_STARTED'&&o.fixture_id===this.options.fixture_id);
+      const processStopped=observations.some(o=>o.kind==='PROCESS_STOPPED'&&o.fixture_id===this.options.fixture_id);
+      const terminalResult=observations.some(o=>o.kind==='TERMINAL_RESULT'&&o.fixture_id===this.options.fixture_id);
+      if(event==='PROCESS_STARTED'&&!processStarted)throw new WorkflowLedgerError('HOST_PROCESS_OBSERVATION_REQUIRED');
+      if(['CONFIRM_CANCEL','RESULT_UNCERTAIN','RESULT_FAILURE','INTERRUPTED'].includes(event)&&!processStopped)throw new WorkflowLedgerError('PROCESS_RECONCILIATION_REQUIRED');
+      if(event==='RESULT_SUCCESS'&&(!processStopped||!terminalResult))throw new WorkflowLedgerError('HOST_RESULT_EVIDENCE_REQUIRED');
+      const effectiveContext={observedAt:this.nowIso(),processObservedStopped:processStopped,terminalResultValid:terminalResult,identityValid:current.identity.status==='VERIFIED',protocolValid:terminalResult,evidenceObserved:observations.some(o=>o.kind==='TERMINAL_RESULT'),revocationPending:revoked};
       const next=transitionInvocation(current,event,effectiveContext);const last=events.at(-1)!;
       return this.writeEvent(workflowId,last.sequence+1,'INVOCATION_TRANSITION',{invocation_id:invocationId,event,context:effectiveContext,record:next},last.event_hash);
     });
   }
-  recordArtifactAuthorship(workflowId:string,artifactHash:string,invocationId:string):LedgerEvent {
+  recordArtifactAuthorship(workflowId:string,artifactHash:string,invocationId:string,artifactPath:string,fixtureId:string):LedgerEvent {
     return this.withLock(workflowId,events=>{
-      if(!/^[a-f0-9]{64}$/.test(artifactHash))throw Error('INVALID_ARTIFACT_HASH');
-      const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.role!=='IMPLEMENTER')throw Error('ARTIFACT_AUTHOR_NOT_VALIDATED');
-      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'ARTIFACT_AUTHORED',{artifact_sha256:artifactHash,invocation_id:invocationId},last.event_hash);
+      if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
+      const auth=this.assertProgress(events);if(!/^[a-f0-9]{64}$/.test(artifactHash))throw Error('INVALID_ARTIFACT_HASH');
+      const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.role!=='IMPLEMENTER'||invocation.identity.status!=='VERIFIED')throw Error('ARTIFACT_AUTHOR_NOT_VALIDATED');
+      const check=checkAuthorization(auth.record,{workflow_id:workflowId,contract_sha256:auth.record.contract_sha256,repository:auth.record.repository,baseline_git:auth.record.baseline_git,worktree:auth.record.worktree},this.nowIso(),'WRITE',invocation.identity,artifactPath,auth.contract.scope.forbidden_changes);if(!check.allowed)throw new WorkflowLedgerError('ARTIFACT_PATH_UNAUTHORIZED:'+check.reasons.join(','));
+      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'ARTIFACT_AUTHORED',{artifact_sha256:artifactHash,diff_sha256:artifactHash,artifact_path:artifactPath,invocation_id:invocationId,fixture_id:fixtureId},last.event_hash);
     });
   }
-  recordArtifactReview(workflowId:string,artifactHash:string,invocationId:string):LedgerEvent {
+  recordArtifactReview(workflowId:string,artifactHash:string,invocationId:string,fixtureId:string,reviewSha256=artifactHash):LedgerEvent {
     return this.withLock(workflowId,events=>{
-      if(!/^[a-f0-9]{64}$/.test(artifactHash))throw Error('INVALID_ARTIFACT_HASH');
-      const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.role!=='REVIEWER')throw Error('REVIEWER_NOT_VALIDATED');
-      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'ARTIFACT_REVIEWED',{artifact_sha256:artifactHash,invocation_id:invocationId},last.event_hash);
+      if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
+      this.assertProgress(events);
+      if(!/^[a-f0-9]{64}$/.test(artifactHash)||!/^[a-f0-9]{64}$/.test(reviewSha256))throw Error('INVALID_ARTIFACT_HASH');
+      const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.role!=='REVIEWER'||invocation.identity.status!=='VERIFIED')throw Error('REVIEWER_NOT_VALIDATED');
+      const authors=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED'&&(e.payload as {artifact_sha256:string}).artifact_sha256===artifactHash).map(e=>(e.payload as {invocation_id:string}).invocation_id);
+      if(!authors.length||authors.includes(invocationId))throw new WorkflowLedgerError('REVIEW_NOT_INDEPENDENT');
+      for(const id of authors){const author=this.invocationsFrom(events).find(i=>i.invocation_id===id);if(!author||!evaluateIndependentReview(author.identity,invocation.identity,{reviewerInvocationId:invocationId,artifactAuthorInvocationIds:authors}).allowed)throw new WorkflowLedgerError('REVIEW_NOT_INDEPENDENT');}
+      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'ARTIFACT_REVIEWED',{artifact_sha256:artifactHash,review_sha256:reviewSha256,invocation_id:invocationId,fixture_id:fixtureId,identity_sha256:canonicalHash(invocation.identity)},last.event_hash);
+    });
+  }
+  recordFixtureEvidence(workflowId:string,kind:'VALIDATION'|'FINAL',invocationId:string,evidenceSha256:string,fixtureId:string):LedgerEvent {
+    if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
+    return this.withLock(workflowId,events=>{this.assertProgress(events);if(!/^[a-f0-9]{64}$/.test(evidenceSha256))throw new WorkflowLedgerError('INVALID_EVIDENCE_HASH');const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.identity.status!=='VERIFIED')throw new WorkflowLedgerError('EVIDENCE_INVOCATION_UNVERIFIED');if(kind==='VALIDATION'&&!['VALIDATOR','IMPLEMENTER'].includes(invocation.role))throw new WorkflowLedgerError('VALIDATION_ROLE_REQUIRED');const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'HOST_EVIDENCE',{kind,workflow_id:workflowId,invocation_id:invocationId,evidence_sha256:evidenceSha256,fixture_id:fixtureId},last.event_hash);});
+  }
+  evaluateGate(workflowId:string,gate:'REVIEW-GATE'|'ValidationGate',fixtureId:string):LedgerEvent {
+    if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
+    return this.withLock(workflowId,events=>{
+      const auth=this.assertProgress(events);let evidence:string[]=[];
+      if(gate==='REVIEW-GATE'){
+        const authored=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED').map(e=>e.payload as {artifact_sha256:string;invocation_id:string;fixture_id:string});
+        const reviewed=events.filter(e=>e.event_type==='ARTIFACT_REVIEWED').map(e=>e.payload as {artifact_sha256:string;invocation_id:string;fixture_id:string});
+        const invocations=this.invocationsFrom(events);
+        for(const a of authored){const author=invocations.find(i=>i.invocation_id===a.invocation_id);const review=reviewed.find(r=>r.artifact_sha256===a.artifact_sha256&&r.invocation_id!==a.invocation_id);const reviewer=review?invocations.find(i=>i.invocation_id===review.invocation_id):null;if(author?.state==='SUCCEEDED'&&reviewer?.state==='SUCCEEDED'&&evaluateIndependentReview(author.identity,reviewer.identity,{reviewerInvocationId:reviewer.invocation_id,artifactAuthorInvocationIds:[author.invocation_id]}).allowed)evidence.push(a.artifact_sha256);}
+      } else {
+        const validation=events.filter(e=>e.event_type==='HOST_EVIDENCE'&&(e.payload as {kind?:string;fixture_id?:string}).kind==='VALIDATION'&&(e.payload as {fixture_id?:string}).fixture_id===fixtureId);
+        const authored=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED');const impl=this.invocationsFrom(events).some(i=>i.role==='IMPLEMENTER'&&i.state==='SUCCEEDED');
+        if(impl&&authored.length)evidence=validation.map(e=>(e.payload as {evidence_sha256:string}).evidence_sha256);
+      }
+      if(!evidence.length)throw new WorkflowLedgerError('GATE_EVIDENCE_INCOMPLETE:'+gate);
+      const proof=createGateProof(gate,workflowId,auth.record.contract_sha256,{allowed:true,contract_sha256:auth.record.contract_sha256},this.nowIso(),'SIMULATED_HOST');const last=events.at(-1)!;
+      return this.writeEvent(workflowId,last.sequence+1,'GATE_DECISION',{gate,authorization_id:auth.record.authorization_id,allowed:true,proof,evidence_sha256:canonicalHash(evidence),fixture_id:fixtureId},last.event_hash);
+    });
+  }
+  recordFinalApproval(workflowId:string,approval:ApprovalRecord,attemptId:string,reviewId:string,diffSha256:string,reviewSha256:string,evidenceSha256:string,fixtureId?:string):LedgerEvent {
+    return this.withLock(workflowId,events=>{
+      const workflow=this.projectEvents(events);if(workflow.state!=='AWAITING_APPROVAL')throw new WorkflowLedgerError('FINAL_APPROVAL_STATE_INVALID');
+      let auth:NonNullable<ReturnType<WorkflowLedger['currentAuthorization']>>;try{auth=this.assertCurrentAuthorization(events);}catch(error){if(error instanceof WorkflowLedgerError&&error.code==='AUTHORIZATION_EXPIRED')this.blockExpiredWorkflow(events);throw error;}const trusted=this.options.trusted_approvals??[];
+      const authored=events.find(e=>e.event_type==='ARTIFACT_AUTHORED'&&(e.payload as {diff_sha256?:string}).diff_sha256===diffSha256);const authoredPayload=authored?.payload as {artifact_sha256?:string;invocation_id?:string}|undefined;
+      const reviewed=events.find(e=>e.event_type==='ARTIFACT_REVIEWED'&&(e.payload as {artifact_sha256?:string;review_sha256?:string}).artifact_sha256===authoredPayload?.artifact_sha256&&(e.payload as {review_sha256?:string}).review_sha256===reviewSha256);
+      const evidence=events.find(e=>e.event_type==='HOST_EVIDENCE'&&(e.payload as {kind?:string;evidence_sha256?:string}).kind==='FINAL'&&(e.payload as {evidence_sha256?:string}).evidence_sha256===evidenceSha256);
+      if(!authoredPayload||!reviewed||!evidence)throw new WorkflowLedgerError('FINAL_EVIDENCE_NOT_REGISTERED');
+      const p1=this.options.p1_pr_gate_verifier?.({workflow_id:workflowId,contract_sha256:auth.record.contract_sha256,attempt_id:attemptId,diff_sha256:diffSha256,review_sha256:reviewSha256,evidence_sha256:evidenceSha256,review_id:reviewId});
+      if(!p1||!p1.allowed||p1.gate!=='PR-GATE'||p1.execution_id!==workflowId||p1.attempt_id!==attemptId||p1.contract_sha256!==auth.record.contract_sha256)throw new WorkflowLedgerError('P1_PR_GATE_REQUIRED');
+      const merge=verifyApproval(auth.contract,approval,{scope:'MERGE',trusted,attempt_id:attemptId,diff_sha256:diffSha256,review_id:reviewId});if(!merge.allowed)throw new WorkflowLedgerError('FINAL_APPROVAL_REJECTED:'+merge.reasons.join(','));
+      const simulated=approval.approval_source==='P2_TEST_FIXTURE';if(simulated&&(!this.options.fixture_id||fixtureId!==this.options.fixture_id))throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');if(!simulated&&fixtureId!==undefined)throw new WorkflowLedgerError('FIXTURE_SCOPE_INVALID');
+      if(!trusted.some(t=>t.record_sha256===canonicalHash(approval)&&t.authorized_by===approval.authorized_by&&t.approval_source===approval.approval_source&&!t.revoked))throw new WorkflowLedgerError('TRUSTED_APPROVAL_REQUIRED');
+      const proof={workflow_id:workflowId,contract_sha256:auth.record.contract_sha256,diff_sha256:diffSha256,review_sha256:reviewSha256,evidence_sha256:evidenceSha256,actor:approval.authorized_by,source:simulated?'SIMULATED_HUMAN' as const:'HUMAN' as const,verified:true as const,approved_at:this.nowIso()};
+      const next=projectVerifiedFinalApproval(workflow);let last=events.at(-1)!;
+      last=this.writeEvent(workflowId,last.sequence+1,'P1_PR_GATE_VERIFIED',{gate:p1,bindings:{workflow_id:workflowId,contract_sha256:auth.record.contract_sha256,attempt_id:attemptId,diff_sha256:diffSha256,review_sha256:reviewSha256,evidence_sha256:evidenceSha256,review_id:reviewId}},last.event_hash);
+      last=this.writeEvent(workflowId,last.sequence+1,'FINAL_APPROVAL_RECORDED',{approval,approval_sha256:canonicalHash(approval),proof,fixture_id:simulated?fixtureId:null},last.event_hash);
+      return this.writeEvent(workflowId,last.sequence+1,'WORKFLOW_TRANSITION',{event:'APPROVE',context:{approvalValid:true,finalApprovalProof:proof},next_state:next.state,next_phase:next.phase,authorization_id:next.authorization_id},last.event_hash);
     });
   }
   reviewIndependence(workflowId:string,artifactHash:string,reviewerInvocationId:string):{readonly allowed:boolean;readonly reasons:readonly string[]} {
@@ -232,17 +401,22 @@ export class WorkflowLedger {
   }
   acceptMessage(input:AgentMessageInput):{readonly message:NormalizedAgentMessage;readonly duplicate:boolean} {
     return this.withLock(input.workflow_id,events=>{
-      if(this.projectEvents(events).state!=='ACTIVE')throw Error('WORKFLOW_NOT_ACTIVE');
+      const auth=this.assertProgress(events);
       const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===input.invocation_id);
       if(!invocation||invocation.state!=='RUNNING')throw Error('INVOCATION_NOT_RUNNING');
+      if(input.message_type==='CONTROL_EVENT')throw new WorkflowLedgerError('CONTROL_EVENT_HOST_ONLY');
+      if(Buffer.byteLength(JSON.stringify(input),'utf8')>resolveEffectiveLimits(auth.record.limits).message_bytes)throw new WorkflowLedgerError('MESSAGE_TOO_LARGE');
+      if(input.source_cursor!==null&&!/^(0|[1-9][0-9]*)$/u.test(input.source_cursor))throw new WorkflowLedgerError('SOURCE_CURSOR_INVALID');
       const identity=input.source_event_id!==null?'event:'+input.source_event_id:input.source_cursor!==null?'cursor:'+input.source_cursor:null;
       if(!identity)throw Error('STABLE_SOURCE_ID_REQUIRED');
       const existing=events.filter(e=>e.event_type==='AGENT_MESSAGE').map(e=>e.payload as NormalizedAgentMessage).find(m=>m.invocation_id===input.invocation_id&&(m.source_event_id!==null?'event:'+m.source_event_id:m.source_cursor!==null?'cursor:'+m.source_cursor:null)===identity);
       const payloadHash=canonicalHash(input.payload);
       if(existing){if(existing.payload_sha256!==payloadHash||existing.message_type!==input.message_type||existing.reply_to_message_id!==input.reply_to_message_id)throw Error('SOURCE_EVENT_CONFLICT');return Object.freeze({message:existing,duplicate:true});}
+      if(input.source_cursor!==null){const cursors=events.filter(e=>e.event_type==='AGENT_MESSAGE'&&(e.payload as NormalizedAgentMessage).invocation_id===input.invocation_id).map(e=>Number((e.payload as NormalizedAgentMessage).source_cursor)).filter(Number.isSafeInteger);if(cursors.length&&Number(input.source_cursor)<=Math.max(...cursors))throw new WorkflowLedgerError('SOURCE_CURSOR_REWIND');}
       if(input.reply_to_message_id!==null&&!events.some(e=>e.event_type==='AGENT_MESSAGE'&&(e.payload as NormalizedAgentMessage).message_id===input.reply_to_message_id))throw Error('REPLY_TARGET_UNKNOWN');
       const last=events.at(-1)!;const sequence=last.sequence+1;
-      const message=normalizeAgentMessage(input,{sequence,previous_event_hash:last.event_hash,observed_at:new Date().toISOString(),correlation_id:'corr-'+workflowIdSafe(input.workflow_id)});
+      const message=normalizeAgentMessage(input,{sequence,previous_event_hash:last.event_hash,observed_at:this.nowIso(),correlation_id:'corr-'+workflowIdSafe(input.workflow_id)});
+      if(Buffer.byteLength(JSON.stringify(message),'utf8')>resolveEffectiveLimits(auth.record.limits).message_bytes)throw new WorkflowLedgerError('MESSAGE_TOO_LARGE');
       this.writeEvent(input.workflow_id,sequence,'AGENT_MESSAGE',message,last.event_hash);
       return Object.freeze({message,duplicate:false});
     });
@@ -265,14 +439,16 @@ export class WorkflowLedger {
   effectsFrom(events:readonly LedgerEvent[]):EffectRecord[] {
     const records=new Map<string,EffectRecord>();for(const e of events){if(e.event_type==='EFFECT_INTENT'){const x=e.payload as EffectRecord;records.set(x.effect_id,x);}else if(e.event_type==='EFFECT_TRANSITION'){const x=e.payload as {effect_id:string;record:EffectRecord};records.set(x.effect_id,x.record);}}return [...records.values()];
   }
-  assertBudgets(workflowId:string,now:string):{readonly workflow_active_ms:number;readonly longest_invocation_ms:number} {
-    const events=this.verify(workflowId),workflow=this.projectEvents(events),authorization=this.latestAuthorization(events,workflow.authorization_id??'');if(!authorization)throw Error('AUTHORIZATION_NOT_CURRENT');
+  assertBudgets(workflowId:string):{readonly workflow_active_ms:number;readonly longest_invocation_ms:number} {
+    const events=this.verify(workflowId),authorization=this.assertCurrentAuthorization(events),now=this.nowIso();
     const limits=resolveEffectiveLimits(authorization.record.limits),workflowMs=measureWorkflowActiveMs(events,now),invocationMs=measureInvocationMs(this.invocationsFrom(events),now);
     assertRuntimeBudgets(workflowMs,invocationMs,limits);return Object.freeze({workflow_active_ms:workflowMs,longest_invocation_ms:invocationMs});
   }
+  assertOutputLimit(workflowId:string,streamBytes:number):void {const events=this.verify(workflowId),auth=this.assertProgress(events);assertOutputWithinLimit(streamBytes,resolveEffectiveLimits(auth.record.limits));}
   verify(id:string):readonly LedgerEvent[] {
     const dir=this.eventsDir(id);if(!fs.existsSync(dir))throw Error('WORKFLOW_NOT_FOUND');
-    const names=fs.readdirSync(dir).sort();if(!names.length)throw Error('LEDGER_EMPTY');
+    const entries=fs.readdirSync(dir);for(const entry of entries){if(entry.startsWith('.pending-')&&entry.endsWith('.tmp'))continue;if(!/^\d{8}\.json$/u.test(entry))throw new WorkflowLedgerError('LEDGER_UNEXPECTED_ENTRY');const stat=fs.lstatSync(path.join(dir,entry));if(!stat.isFile()||stat.isSymbolicLink())throw new WorkflowLedgerError('LEDGER_EVENT_UNTRUSTED');}
+    const names=entries.filter(n=>/^\d{8}\.json$/u.test(n)).sort();if(!names.length)throw Error('LEDGER_EMPTY');
     let previous=LEDGER_GENESIS;const events:LedgerEvent[]=[];const invocationMap=new Map<string,AgentInvocationRecord>();const effectMap=new Map<string,EffectRecord>();let reservations=0;
     for(let sequence=0;sequence<names.length;sequence++){
       const name=String(sequence).padStart(8,'0')+'.json';if(names[sequence]!==name)throw Error('LEDGER_SEQUENCE');
@@ -287,13 +463,16 @@ export class WorkflowLedger {
           const stored=p?this.latestAuthorization(events,p.authorization_id):null;
           if(!stored||stored.record.revoked_at!==null||canonicalHash(stored.proof)!==canonicalHash(p)||stored.record.contract_sha256!==projection.contract_sha256||Date.parse(stored.record.expires_at)<=Date.parse(event.observed_at))throw Error('LEDGER_AUTHORIZATION_MISMATCH');
         }
-        const next=transitionWorkflow(projection,data.event,data.context);
+        const finalRecorded=events.some(e=>e.event_type==='FINAL_APPROVAL_RECORDED');
+        const prGateRecorded=events.some(e=>e.event_type==='P1_PR_GATE_VERIFIED');
+        const next=data.event==='APPROVE'&&finalRecorded&&prGateRecorded?projectVerifiedFinalApproval(projection):transitionWorkflow(projection,data.event,data.context);
         if(next.state!==data.next_state||next.phase!==data.next_phase||next.authorization_id!==data.authorization_id)throw Error('LEDGER_PROJECTION_MISMATCH');
       } else if(event.event_type==='AUTHORIZATION_RECORDED'){
         const p=event.payload as {record:WorkflowAuthorizationRecord;approval:ApprovalRecord;contract:TaskContract;trust:TrustedApproval;proof:import('./machine.js').AuthorizationProof};
         const approvalHash=canonicalHash(p.approval),contractHash=canonicalHash(p.contract);
         if(p.record.workflow_id!==id||p.record.approval_record_sha256!==approvalHash||p.record.contract_sha256!==contractHash||p.trust.record_sha256!==approvalHash||p.trust.revoked||p.proof.authorization_id!==p.record.authorization_id||p.proof.workflow_id!==id||p.proof.contract_sha256!==contractHash||p.proof.expires_at!==p.record.expires_at||p.proof.revoked)throw Error('LEDGER_AUTHORIZATION_RECORD_INVALID');
-        const decision=authorizeWorkflow(p.record,p.approval,p.contract,[p.trust]);if(!decision.allowed)throw Error('LEDGER_AUTHORIZATION_RECORD_INVALID');
+        const configured=this.options.trusted_approvals??[];if(!configured.some(t=>canonicalHash(t)===canonicalHash(p.trust)&&!t.revoked))throw Error('LEDGER_AUTHORITY_CONFIG_MISMATCH');
+        const decision=authorizeWorkflow(p.record,p.approval,p.contract,configured);if(!decision.allowed)throw Error('LEDGER_AUTHORIZATION_RECORD_INVALID');
       } else if(event.event_type==='INVOCATION_RESERVED'){
         const p=event.payload as {invocation_id:string;reservation_number:number;limit:number};reservations++;
         const projected=this.projectEvents(events);const authorization=this.latestAuthorization(events,projected.authorization_id??'');const expectedLimit=authorization?resolveEffectiveLimits(authorization.record.limits).invocations:0;
@@ -309,7 +488,7 @@ export class WorkflowLedger {
         if(canonicalHash(expected)!==canonicalHash(p.record))throw Error('INVOCATION_PROJECTION_MISMATCH');invocationMap.set(p.invocation_id,p.record);
       } else if(event.event_type==='AGENT_MESSAGE'){
         const message=event.payload as NormalizedAgentMessage;const invocation=invocationMap.get(message.invocation_id);
-        if(!this.validator.validate('AgentMessage',message).valid||!verifyNormalizedMessage(message)||message.workflow_id!==id||message.sequence!==sequence||message.previous_event_hash!==event.previous_event_hash||!invocation||invocation.state!=='RUNNING')throw Error('MESSAGE_JOURNAL_INVALID');
+        if(!this.validator.validate('AgentMessage',message).valid||!verifyNormalizedMessage(message)||message.message_type==='CONTROL_EVENT'||message.workflow_id!==id||message.sequence!==sequence||message.previous_event_hash!==event.previous_event_hash||!invocation||invocation.state!=='RUNNING')throw Error('MESSAGE_JOURNAL_INVALID');
         const idKey=message.source_event_id!==null?'event:'+message.source_event_id:'cursor:'+message.source_cursor;
         if(events.some(e=>e.event_type==='AGENT_MESSAGE'&&(e.payload as NormalizedAgentMessage).invocation_id===message.invocation_id&&((e.payload as NormalizedAgentMessage).source_event_id!==null?'event:'+((e.payload as NormalizedAgentMessage).source_event_id):'cursor:'+((e.payload as NormalizedAgentMessage).source_cursor))===idKey))throw Error('MESSAGE_REPLAY_IN_LEDGER');
       } else if(event.event_type==='EFFECT_INTENT'){
@@ -325,6 +504,10 @@ export class WorkflowLedger {
         const p=event.payload as {authorization_id:string;workflow_id:string;revoked_at:string;record:WorkflowAuthorizationRecord;proof:import('./machine.js').AuthorizationProof};const projection=this.projectEvents(events);const prior=this.latestAuthorization(events,p.authorization_id);
         if(p.workflow_id!==id||projection.authorization_id!==p.authorization_id||!Number.isFinite(Date.parse(p.revoked_at))||!['AUTHORIZED','ACTIVE','AWAITING_APPROVAL','BLOCKED'].includes(projection.state)||!prior||prior.record.revoked_at!==null||p.record.revoked_at!==p.revoked_at||canonicalHash({...p.record,revoked_at:null})!==canonicalHash(prior.record)||canonicalHash(p.proof)!==canonicalHash(prior.proof))throw Error('AUTHORIZATION_REVOCATION_INVALID');
         transitionWorkflow(projection,'REVOKE');
+      } else if(event.event_type==='AUTHORIZATION_SELECTED'){
+        const p=event.payload as {authorization_id:string;workflow_id:string};if(p.workflow_id!==id||!events.some(e=>e.event_type==='AUTHORIZATION_RECORDED'&&(e.payload as {record:WorkflowAuthorizationRecord}).record.authorization_id===p.authorization_id)||this.projectEvents(events).state!=='BLOCKED')throw Error('AUTHORIZATION_SELECTION_INVALID');
+      } else if(event.event_type==='INVOCATION_OBSERVATION'){
+        const p=event.payload as {invocation_id:string;kind:string;evidence_sha256:string;fixture_id:string};if(!this.options.fixture_id||p.fixture_id!==this.options.fixture_id||!invocationMap.has(p.invocation_id)||!['PROCESS_STARTED','PROCESS_STOPPED','TERMINAL_RESULT'].includes(p.kind)||!/^[a-f0-9]{64}$/.test(p.evidence_sha256))throw Error('INVOCATION_OBSERVATION_INVALID');
       }
       events.push(event);previous=event_hash;
     }
@@ -333,8 +516,9 @@ export class WorkflowLedger {
   private projectEvents(events:readonly LedgerEvent[]):WorkflowRecord {
     let workflow=events[0]!.payload as WorkflowRecord;
     for(const event of events.slice(1)){
-      if(event.event_type==='WORKFLOW_TRANSITION'){const p=event.payload as {event:string;context:Parameters<typeof transitionWorkflow>[2]};workflow=transitionWorkflow(workflow,p.event,p.context);}
+      if(event.event_type==='WORKFLOW_TRANSITION'){const p=event.payload as {event:string;context:Parameters<typeof transitionWorkflow>[2]};workflow=p.event==='APPROVE'?projectVerifiedFinalApproval(workflow):transitionWorkflow(workflow,p.event,p.context);}
       else if(event.event_type==='AUTHORIZATION_REVOKED')workflow=transitionWorkflow(workflow,'REVOKE');
+      else if(event.event_type==='AUTHORIZATION_SELECTED'){const p=event.payload as {authorization_id:string};workflow=Object.freeze({...workflow,authorization_id:p.authorization_id});}
     }
     return workflow;
   }
