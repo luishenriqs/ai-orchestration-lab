@@ -11,7 +11,7 @@ O laboratório `ai-orchestration-lab` é um projeto **estritamente independente*
 - Nenhuma atividade deste laboratório altera documentos canônicos, estados normativos, cartões ou código-fonte do IAS.
 - Na Fase P1, todas as execuções operam exclusivamente sobre dados e fixtures sintéticas (`SYNTHETIC_LAB`).
 
-## 3. Estado atual — P1 implementada, revisão independente pendente
+## 3. Estado atual — P1 homologada; P2-001 implementado, pronto para revisão independente
 
 A implementação P1-003 a P1-008 acrescenta:
 
@@ -24,6 +24,14 @@ A implementação P1-003 a P1-008 acrescenta:
 - CLI serial que reproduz os 16 cenários oficiais e gera relatórios JSON/Markdown.
 
 A baseline e a autorização vigente estão em [P1-EXECUTION-BASELINE](docs/evidence/P1-EXECUTION-BASELINE.md). Os documentos originais preservam seus estados históricos. O resultado consolidado está em [P1-IMPLEMENTATION-FINAL-REPORT](P1-IMPLEMENTATION-FINAL-REPORT.md).
+
+P2-001 adiciona contratos versionados, protocolo JSON estrito, máquinas de
+estados, autorização vinculada a `ApprovalRecord`, journal por workflow,
+deduplicação, reconciliação, limites e revisão independente em adapters
+simulados. A implementação está pronta para revisão independente. Não executa
+Codex, Gemini ou Antigravity reais e não comprova isolamento de CLIs. A
+especificação, validação e limitações estão em
+[P2-001 implementation notes](docs/specifications/P2-001-IMPLEMENTATION.md).
 
 ## 4. Reproduzir a validação P1
 
