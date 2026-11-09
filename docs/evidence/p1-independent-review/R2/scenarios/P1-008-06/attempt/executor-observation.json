@@ -1,0 +1,15 @@
+{
+  "exit_code": null,
+  "signal": "SIGKILL",
+  "stdout": "",
+  "stderr": "",
+  "started_at": "2026-11-09T12:26:29.803Z",
+  "duration_ms": 125,
+  "termination_reason": "INTERRUPTED",
+  "process_identity": {
+    "pid": 22389,
+    "process_start_token": "258f355f-0ff8-4c2d-b2da-24b57011a384:166783",
+    "executable": "/usr/bin/bwrap"
+  },
+  "truncated": false
+}

@@ -1,0 +1,118 @@
+{
+  "official_number": 6,
+  "identifier": "P1-008-06",
+  "objective": "Tentativa interrompida.",
+  "initial_conditions": "SYNTHETIC_LAB; independent Git fixture; serial host; zero retry; synthetic approval/review inputs only",
+  "procedure": [
+    "Create independent registered Git fixture with deterministic base; enroll explicitly synthetic host authorization",
+    "Record RUNNING with actual bwrap process token; interrupt real process; simulate host missing terminal write; reconcile orphan twice without retry"
+  ],
+  "expected": "Reject invalid continuation with preserved evidence",
+  "observed": {
+    "ready": {
+      "gate": "TASK-READY",
+      "allowed": true,
+      "reasons": [],
+      "decided_at": "2026-11-09T12:26:29.773Z",
+      "execution_id": "P1-008-06-1de1eca1-d970-4de1-88ba-59a15d3b1b16",
+      "attempt_id": "A",
+      "contract_sha256": "751d509deb7fafea4ccea7b165ccb45b4aa201e98cf3d18a8079eb9f67e42a33"
+    },
+    "observation": {
+      "exit_code": null,
+      "signal": "SIGKILL",
+      "stdout": "",
+      "stderr": "",
+      "started_at": "2026-11-09T12:26:29.803Z",
+      "duration_ms": 125,
+      "termination_reason": "INTERRUPTED",
+      "process_identity": {
+        "pid": 22389,
+        "process_start_token": "258f355f-0ff8-4c2d-b2da-24b57011a384:166783",
+        "executable": "/usr/bin/bwrap"
+      },
+      "truncated": false
+    },
+    "reconciled": {
+      "schema_version": "0.3-p0",
+      "execution_id": "P1-008-06-1de1eca1-d970-4de1-88ba-59a15d3b1b16",
+      "attempt_id": "A",
+      "approval_id": "SYN-APPROVAL-P1-008-06-1de1eca1-d970-4de1-88ba-59a15d3b1b16",
+      "approved_contract_sha256": "751d509deb7fafea4ccea7b165ccb45b4aa201e98cf3d18a8079eb9f67e42a33",
+      "executor": "synthetic",
+      "state": "INTERRUPTED",
+      "started_at": "2026-11-09T12:26:29.804Z",
+      "finished_at": "2026-11-09T12:26:29.933Z",
+      "base_commit": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+      "workspace_root": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-06-1de1eca1-d970-4de1-88ba-59a15d3b1b16/A/workspace",
+      "process_identity": {
+        "pid": 22389,
+        "process_start_token": "258f355f-0ff8-4c2d-b2da-24b57011a384:166783",
+        "executable": "/usr/bin/bwrap"
+      },
+      "termination_reason": "INTERRUPTED"
+    },
+    "reconciliation_idempotent": true,
+    "attempt_count": 1
+  },
+  "status": "PASS",
+  "evidence_directory": "/home/luishenriqs/projects/ai-orchestration-lab/docs/evidence/p1-independent-review/R2/scenarios/P1-008-06",
+  "artifacts": [
+    {
+      "path": "attempt/attempt.json",
+      "sha256": "b6bce3971916f038ab280925799169d0db63bbccd7fdb6da228ecd2b0768cd16"
+    },
+    {
+      "path": "attempt/diff.bundle.json",
+      "sha256": "2de6c51c371cc5442a2cd94bd335788bf0d41340742acf4d3f42abae8ccfe0c4"
+    },
+    {
+      "path": "attempt/events/000000.json",
+      "sha256": "70e67c2481b21b18086a6493cba8c30022392ee4ea203114c9b9e98a7ae1853e"
+    },
+    {
+      "path": "attempt/events/000001.json",
+      "sha256": "46b1488ad70e4fe58db89312c0812d9ce22dcb8b95eb7a92702d72198504e42a"
+    },
+    {
+      "path": "attempt/events/000002.json",
+      "sha256": "f0663fe9865f38948d67d04c5c23702b0a37be97aadac56da731e815fbb6704c"
+    },
+    {
+      "path": "attempt/evidence-manifest.json",
+      "sha256": "67dab0e57650e6201539c6d4285a4cf5a4265589e8d5dd0083470b90696b5b0d"
+    },
+    {
+      "path": "attempt/executor-observation.json",
+      "sha256": "d8e2b121d9c7e8d89b911747f294e9c2a6c926eb0ae5dab3e15af54eb00e5265"
+    },
+    {
+      "path": "attempt/isolation-proof.json",
+      "sha256": "9b0d47ca73bc70e67fa931f477c002f0bd0d7d7fbf13cb2cd83c91fcc7948a37"
+    },
+    {
+      "path": "attempt/red.json",
+      "sha256": "dcf5724792a1d897bd5b4bfd12af97633cad1eaa2e7152ba222bdb47bfeb2c74"
+    },
+    {
+      "path": "attempt/task-ready.json",
+      "sha256": "862feb4a61b9a5c69754ffeea41d95990e07f221178ec7980a8d868b51ede442"
+    },
+    {
+      "path": "attempt/validation-gate.json",
+      "sha256": "f32faa36b99ab40eea04235512f89b85574e5a45f4d969132e5a62e560ab45b6"
+    },
+    {
+      "path": "attempt/workspace-observation.json",
+      "sha256": "4f8482a1650b8721d7e1e0bce42137cc2c5da2c8114ae1603977a89a38ae291b"
+    },
+    {
+      "path": "baseline-files.json",
+      "sha256": "46e39ec41699421b6c5dcd266d0f6de8bd6b8f5f27dd6ef427ec372e8362fab6"
+    },
+    {
+      "path": "fixture-record.json",
+      "sha256": "d1e618d160470ace795d2fe44c7a4c0881cb48fe1cb34c6bd06dae7e554d5e86"
+    }
+  ]
+}

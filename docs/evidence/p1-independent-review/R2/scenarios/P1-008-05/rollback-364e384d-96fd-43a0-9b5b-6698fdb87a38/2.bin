@@ -1,0 +1,1 @@
+const assert=require('node:assert/strict');const sum=require('../src/sum.cjs');assert.equal(sum(1,2),3,'SYN_EXPECT_SUM_3');assert.equal(sum(0,0),0);console.log('SYN_TEST_PASS');

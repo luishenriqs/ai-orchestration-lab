@@ -1,0 +1,1 @@
+{"changes":[{"content":"Ly8gcGFydGlhbCBjaGFuZ2UKbW9kdWxlLmV4cG9ydHM9KCk9PjA7","deleted":false,"path":"src/sum.cjs"}],"tracked_diff":"diff --git a/src/sum.cjs b/src/sum.cjs\nindex 2f07f5a..3216e60 100644\n--- a/src/sum.cjs\n+++ b/src/sum.cjs\n@@ -1 +1,2 @@\n-module.exports=(a,b)=>0;\n+// partial change\n+module.exports=()=>0;\n\\ No newline at end of file\n"}

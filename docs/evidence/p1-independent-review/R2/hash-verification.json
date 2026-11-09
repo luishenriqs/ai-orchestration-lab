@@ -1,0 +1,14 @@
+[
+  {
+    "report": "docs/evidence/p1-execution/scenarios/run-ddff974f-f26e-4639-9c20-88c565f86da7/report.json",
+    "artifacts_verified": 306
+  },
+  {
+    "report": "docs/evidence/p1-execution/scenarios/run-1a1b9b49-0474-40d6-a003-bae14371bcb9/report.json",
+    "artifacts_verified": 306
+  },
+  {
+    "inventory": "corrected-file-hashes.json",
+    "files": 46
+  }
+]

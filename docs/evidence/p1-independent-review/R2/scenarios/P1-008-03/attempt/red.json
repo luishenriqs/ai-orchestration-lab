@@ -1,0 +1,21 @@
+{
+  "phase": "red",
+  "fixture_execution_id": "P1-008-03-cbde1881-6839-4f6f-bb68-ca1e86c55852",
+  "attempt_id": "A",
+  "test_sha256": "d1f9206a3af7aabeafa92b06cadeb90157ac9acb7f2a9a55ef6b14210d5ea9c9",
+  "observation": {
+    "exit_code": 1,
+    "signal": null,
+    "stdout": "",
+    "stderr": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: SYN_EXPECT_SUM_3\n\n0 !== 3\n\n    at Object.<anonymous> (/workspace/tests/sum.cjs:1:87)\n    at Module._compile (node:internal/modules/cjs/loader:1929:14)\n    at Object..js (node:internal/modules/cjs/loader:2060:10)\n    at Module.load (node:internal/modules/cjs/loader:1651:32)\n    at Module._load (node:internal/modules/cjs/loader:1443:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)\n    at Module.require (node:internal/modules/cjs/loader:1674:12)\n    at require (node:internal/modules/helpers:157:16)\n    at [eval]:1:289\n    at runScriptInThisContext (node:internal/vm:219:10) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: 0,\n  expected: 3,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.22.2\n",
+    "started_at": "2026-11-09T12:26:29.180Z",
+    "duration_ms": 25,
+    "termination_reason": "PROCESS_FAILURE",
+    "process_identity": {
+      "pid": 22008,
+      "process_start_token": "258f355f-0ff8-4c2d-b2da-24b57011a384:166721",
+      "executable": "/usr/bin/bwrap"
+    },
+    "truncated": false
+  }
+}

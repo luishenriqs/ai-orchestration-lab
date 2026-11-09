@@ -1,0 +1,11 @@
+{
+  "gate": "TASK-READY",
+  "allowed": false,
+  "reasons": [
+    "CONTRACT_HASH_MISMATCH"
+  ],
+  "decided_at": "2026-11-09T12:26:29.099Z",
+  "execution_id": "P1-008-01-6de22152-8c8e-4900-9d14-5c4d3ef726c0",
+  "attempt_id": "A",
+  "contract_sha256": "8f15ca35ae847d53507b91b7963a02c167bce7b724db0b4f2f799859f9d9998e"
+}

@@ -1,0 +1,20 @@
+{
+  "sequence": 0,
+  "previous": null,
+  "attempt": {
+    "schema_version": "0.3-p0",
+    "execution_id": "P1-008-07-bd83e59d-27a0-47bc-b6a4-69bcd63cadc9",
+    "attempt_id": "A",
+    "approval_id": "SYN-APPROVAL-P1-008-07-bd83e59d-27a0-47bc-b6a4-69bcd63cadc9",
+    "approved_contract_sha256": "887b84055534ffc52b5f632a5119b9a83976ad34f9576993a712c7dbc22935ae",
+    "executor": "synthetic",
+    "state": "CREATED",
+    "started_at": null,
+    "finished_at": null,
+    "base_commit": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "workspace_root": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-07-bd83e59d-27a0-47bc-b6a4-69bcd63cadc9/A/workspace",
+    "process_identity": null,
+    "termination_reason": null
+  },
+  "sha256": "0f94b6187b71a230cdf0ab976e3f96ba56ac94fcba872a5215d418dc44b8d69a"
+}

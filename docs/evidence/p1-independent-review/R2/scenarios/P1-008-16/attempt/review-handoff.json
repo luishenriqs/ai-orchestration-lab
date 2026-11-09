@@ -1,0 +1,50 @@
+{
+  "schema_version": "0.3-p0",
+  "handoff_id": "HANDOFF-A",
+  "execution_id": "P1-008-16-df005662-e173-4859-860c-84c053f7dc62",
+  "attempt_id": "A",
+  "contract_sha256": "931d0aae64ef98b4c84ec5a7ba44b749e1d4fd368a7d4d54857b57278fae2e37",
+  "diff_sha256": "1cc15c71517e56b729d97b88a419e232ddead89c275fcede76c3ae82ba660dc4",
+  "workspace_context_id": "SYNTHETIC_LAB",
+  "data_classification": "SYNTHETIC_LAB",
+  "evidence_manifest_path": "evidence-manifest.json",
+  "included_artifacts": [
+    {
+      "path": "diff.bundle.json",
+      "sha256": "1cc15c71517e56b729d97b88a419e232ddead89c275fcede76c3ae82ba660dc4"
+    },
+    {
+      "path": "workspace-observation.json",
+      "sha256": "8cf37051c0649a23abda2da894090b3108e722fbfed981987eeaea59e7c7a188"
+    },
+    {
+      "path": "executor-observation.json",
+      "sha256": "7bf8f2eaacf868459f3b9662753105327c64073722ebf7adf2a8026f1b17b76f"
+    },
+    {
+      "path": "isolation-proof.json",
+      "sha256": "43ebea3cbd5814c9da68970a4e47d332dea11de60a2dbd185954db0e70ca65f1"
+    },
+    {
+      "path": "governance-integrity.json",
+      "sha256": "9b238bf26562a5961f6dea042078eaa942e05190e681889cc572e9e6c1c80b9c"
+    },
+    {
+      "path": "red.json",
+      "sha256": "2e1067b14b72a6f333689aa452a33d10cc778d1e9663f6d07cf8392ce027332b"
+    },
+    {
+      "path": "green.json",
+      "sha256": "17af71246982d894c05d37c41b3f3f79cf081393078b5efa5d8064c2632a3527"
+    },
+    {
+      "path": "evidence-manifest.json",
+      "sha256": "45e77d97a9ed38ea9dd92dd26f32f4ca52cfc8f27be8c87de4bbc02bc3180a8b"
+    }
+  ],
+  "review_questions": [
+    "Legitimate RED followed by GREEN; protected tests unchanged"
+  ],
+  "sanitization_status": "APPROVED",
+  "export_authorization_ref": null
+}

@@ -1,0 +1,124 @@
+{
+  "official_number": 4,
+  "identifier": "P1-008-04",
+  "objective": "Arquivo alterado fora do escopo.",
+  "initial_conditions": "SYNTHETIC_LAB; independent Git fixture; serial host; zero retry; synthetic approval/review inputs only",
+  "procedure": [
+    "Create independent registered Git fixture with deterministic base; enroll explicitly synthetic host authorization",
+    "Run serial adapter (SYN-004), host TASK-READY/RED/executor/GREEN/collection/handoff/gates",
+    "Host fault injection ONLY inside this disposable fixture: actually change forbidden protected.txt; verify detectively as well"
+  ],
+  "expected": "Reject invalid continuation with preserved evidence",
+  "observed": {
+    "prevented": {
+      "gate": "ValidationGate",
+      "allowed": false,
+      "reasons": [
+        "EXECUTION_NOT_COMPLETED",
+        "MISSING_GREEN",
+        "EXECUTOR_FAILED"
+      ],
+      "decided_at": "2026-11-09T12:26:29.479Z",
+      "execution_id": "P1-008-04-a5da41f8-aa4c-4ae4-b0c1-8cac3b757f34",
+      "attempt_id": "A",
+      "contract_sha256": "902751c979ec0dbdc82fcfbc304e6ce2b5b290d1ce7e57979d7df39fb58b2be2"
+    },
+    "detected": [
+      "WORKSPACE_CHANGED",
+      "SCOPE_VIOLATION",
+      "MISSING_GREEN"
+    ]
+  },
+  "status": "PASS",
+  "evidence_directory": "/home/luishenriqs/projects/ai-orchestration-lab/docs/evidence/p1-independent-review/R2/scenarios/P1-008-04",
+  "artifacts": [
+    {
+      "path": "attempt/approval.json",
+      "sha256": "5a79872bd77dbcde81c950af7c302f9b3983f019ac1385a1ede0e3f39509f0b9"
+    },
+    {
+      "path": "attempt/attempt.json",
+      "sha256": "2d440bdbc5dfc5902ec4cd79514eca365c2d4db7fb18c8764ca957a4461dee77"
+    },
+    {
+      "path": "attempt/contract.json",
+      "sha256": "84386ae97bf3b7e3c2a822a6997e3115deb665fd5991ace3d6696b8179cedcf8"
+    },
+    {
+      "path": "attempt/diff.bundle.json",
+      "sha256": "3ad5a31223401f648e55c8d9cbe5b04c57782f1253f8413b8a29c192cfabb2f9"
+    },
+    {
+      "path": "attempt/events/000000.json",
+      "sha256": "ceb59a8269990276097872ae8016f98ed0778ca8a31c82a1cc1a36b69c069951"
+    },
+    {
+      "path": "attempt/events/000001.json",
+      "sha256": "92024b2fc70501016e02d814b32cbc11e6fba47688fbf592129c22e4a1073910"
+    },
+    {
+      "path": "attempt/events/000002.json",
+      "sha256": "1c5498ee96201975acfd25014c6636e2f102bbc45ca06b5961cb091eeeac277f"
+    },
+    {
+      "path": "attempt/evidence-manifest.json",
+      "sha256": "2c4ec840757058d673d93cdb373692fc57aae2c29ae47782dd87a43df1f5bf98"
+    },
+    {
+      "path": "attempt/execution-result.json",
+      "sha256": "ae62c9729aa1eaae959d724f20dfeddfada8c08464f81f1d2f7eefdd8cc5bb19"
+    },
+    {
+      "path": "attempt/executor-observation.json",
+      "sha256": "922216dd142441cda3575466aa2b1ed9155ba976c2729b5f1bc71a34ff3597a5"
+    },
+    {
+      "path": "attempt/governance-integrity.json",
+      "sha256": "9b238bf26562a5961f6dea042078eaa942e05190e681889cc572e9e6c1c80b9c"
+    },
+    {
+      "path": "attempt/host-policy.json",
+      "sha256": "2a163eaa9624844e2b08cd199705c483f2bc1ec6423e845b24cba5d3fc504ddb"
+    },
+    {
+      "path": "attempt/isolation-proof.json",
+      "sha256": "c9c087f18868b8945a93ba4e719d06c2ddc3f583ec3da081601e27c1c01a40d8"
+    },
+    {
+      "path": "attempt/red.json",
+      "sha256": "3386ecd967733933b4d1223c947e886874dffab70a6be9ec1d3a676a7dcfa9c4"
+    },
+    {
+      "path": "attempt/review-handoff.json",
+      "sha256": "31a1365c9044fe45243e29e60705405f1c9eedd1de40fd800b4d5378a3821aef"
+    },
+    {
+      "path": "attempt/task-ready.json",
+      "sha256": "50da18e49fc42c264b6fd4582b800eb455f1a275474648e8353ab0a177348b61"
+    },
+    {
+      "path": "attempt/validation-gate.json",
+      "sha256": "fa76e5c1700e80c9b686c62d6d01694aa767fef64bea6a77b6d5d4324d0ff261"
+    },
+    {
+      "path": "attempt/workspace-observation.json",
+      "sha256": "703c0916657c5b7bec96f31b66686d62e17370a415b3065b0ccb124b95b2fa7e"
+    },
+    {
+      "path": "baseline-files.json",
+      "sha256": "46e39ec41699421b6c5dcd266d0f6de8bd6b8f5f27dd6ef427ec372e8362fab6"
+    },
+    {
+      "path": "fault-injection.json",
+      "sha256": "f461052f924d19d57916e404d317905cb1a8e67633830ec2bdb181c31457c16e"
+    },
+    {
+      "path": "fault-validation-gate.json",
+      "sha256": "52979f9d6a204bdf4cd0751c2b6932302e876166be80ae44223bea8130d099c0"
+    },
+    {
+      "path": "fixture-record.json",
+      "sha256": "9da45e26d811f449ecd98965d7a4fcc6e6ba4c1162361bb717345c829d1dae22"
+    }
+  ]
+}

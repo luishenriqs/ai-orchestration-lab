@@ -1,0 +1,9 @@
+{
+  "schema_version": "0.3-p0",
+  "execution_id": "P1-008-05-b85d1524-be0c-4ddd-8483-3f8aee33e1c3",
+  "attempt_id": "A",
+  "executor": "synthetic",
+  "agent_declared_outcome": "failed",
+  "agent_summary": "Synthetic executor produced no success declaration",
+  "agent_reported_blockers": []
+}

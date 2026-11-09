@@ -1,0 +1,65 @@
+{
+  "schema_version": "0.3-p0",
+  "review_id": "SYN-REVIEW-A",
+  "execution_id": "P1-008-08-e0bdd3c3-232a-44a1-b657-c6f7572a205c",
+  "attempt_id": "A",
+  "reviewed_contract_sha256": "a9b8f4a9f8bc851d4ff31f17492aa167ed65163b9b1f53010c5e36e5cf39ad08",
+  "reviewed_diff_sha256": "1cc15c71517e56b729d97b88a419e232ddead89c275fcede76c3ae82ba660dc4",
+  "reviewer_model": "SYNTHETIC_REVIEW_FIXTURE_NOT_REAL_REVIEW",
+  "review_timestamp": "2026-11-09T12:26:30.382Z",
+  "categories_evaluated": [
+    {
+      "category": "Requisitos",
+      "applicable": true
+    },
+    {
+      "category": "Comportamento",
+      "applicable": true
+    },
+    {
+      "category": "Segurança",
+      "applicable": true
+    },
+    {
+      "category": "Confidencialidade",
+      "applicable": true
+    },
+    {
+      "category": "Concorrência",
+      "applicable": true
+    },
+    {
+      "category": "Integridade",
+      "applicable": true
+    },
+    {
+      "category": "Testes positivos",
+      "applicable": true
+    },
+    {
+      "category": "Testes negativos",
+      "applicable": true
+    },
+    {
+      "category": "Casos de borda",
+      "applicable": true
+    },
+    {
+      "category": "Escopo",
+      "applicable": true
+    },
+    {
+      "category": "Rollback",
+      "applicable": true
+    },
+    {
+      "category": "Compatibilidade normativa",
+      "applicable": true
+    }
+  ],
+  "findings": [],
+  "verdict": "APPROVED",
+  "limitations": [
+    "Synthetic gate input only; no independent review of the project was performed"
+  ]
+}
