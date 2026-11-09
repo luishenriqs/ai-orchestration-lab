@@ -40,3 +40,4 @@ export * from './execution/synthetic.js';
 export * from './execution/adapter.js';
 export * from './evidence/collector.js';
 export * from './evidence/handoff.js';
+export * from './workflow/index.js';
