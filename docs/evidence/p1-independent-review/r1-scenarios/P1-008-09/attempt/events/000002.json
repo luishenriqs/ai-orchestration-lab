@@ -1,0 +1,24 @@
+{
+  "sequence": 2,
+  "previous": "08afa50e53e0d07841e3929eaea72d9c04c4f3f56a4b206b1f0315b815550bad",
+  "attempt": {
+    "schema_version": "0.3-p0",
+    "execution_id": "P1-008-09-b9cea813-071a-437b-907a-9288e7e35062",
+    "attempt_id": "A",
+    "approval_id": "SYN-APPROVAL-P1-008-09-b9cea813-071a-437b-907a-9288e7e35062",
+    "approved_contract_sha256": "e1b209492855ec06dc05a9dc8bd66d425faa0c05492dd81660a195d48207c0a8",
+    "executor": "synthetic",
+    "state": "FAILED",
+    "started_at": "2026-11-09T12:19:26.433Z",
+    "finished_at": "2026-11-09T12:19:26.457Z",
+    "base_commit": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "workspace_root": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-09-b9cea813-071a-437b-907a-9288e7e35062/A/workspace",
+    "process_identity": {
+      "pid": 7049,
+      "process_start_token": "258f355f-0ff8-4c2d-b2da-24b57011a384:124446",
+      "executable": "/usr/bin/bwrap"
+    },
+    "termination_reason": "PROCESS_FAILURE"
+  },
+  "sha256": "957f0728ec3dbd1a5c1b0bf16d8a95313dfd0c6e98faf8516b6d2421a1575a05"
+}

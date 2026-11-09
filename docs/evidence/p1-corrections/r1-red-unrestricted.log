@@ -1,0 +1,70 @@
+✖ R1-001 rejects synthetic source that exits before protected assertions or spoofs their output (49.166025ms)
+✖ R1-002 and R1-003 bind gates to persisted authorization and process and block severe review findings (311.987559ms)
+✖ R1-004 rejects duplicate contract keys before schema validation and hashing (0.366421ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 403.516771
+
+✖ failing tests:
+
+test at dist/tests/integration/review-regressions.test.js:15:1
+✖ R1-001 rejects synthetic source that exits before protected assertions or spoofs their output (49.166025ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'PASS' !== 'ERROR'
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/review-regressions.test.js:22:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'PASS',
+    expected: 'ERROR',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/integration/review-regressions.test.js:25:1
+✖ R1-002 and R1-003 bind gates to persisted authorization and process and block severe review findings (311.987559ms)
+  AssertionError [ERR_ASSERTION]: {"execution_id":"UNRELATED"}
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/review-regressions.test.js:33:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/integration/review-regressions.test.js:47:1
+✖ R1-004 rejects duplicate contract keys before schema validation and hashing (0.366421ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/review-regressions.test.js:50:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { EvidenceManifest, ExecutionAttempt, TaskContract, TestRunRecord } from '../contracts/types.js';
 import { validateEvidenceManifest } from '../contracts/validator.js';
 import { canonicalHash, canonicalize, sha256 } from '../contracts/integrity.js';
-import { type Fixture, verifyFixture } from '../execution/fixtures.js';
+import { type Fixture, verifyFixture, assertSyntheticSource } from '../execution/fixtures.js';
 import { git, safePath, readJson, writeNew } from '../execution/host.js';
 import { runFixtureTest } from '../execution/synthetic.js';
 import type { ProcessObservation } from '../execution/process.js';
@@ -57,7 +57,8 @@ export function verifyEvidence(fixture: Fixture, contract: TaskContract, attempt
     const m = parsed.value;
     const reasons: string[] = [];
     try {
-        if (contract.identity.execution_id !== fixture.execution_id || attempt.attempt_id !== fixture.attempt_id || m.execution_id !== contract.identity.execution_id || m.attempt_id !== attempt.attempt_id || attempt.approved_contract_sha256 !== canonicalHash(contract) || attempt.workspace_root !== fixture.workspace || attempt.base_commit !== fixture.base_commit || m.git.base_sha !== fixture.base_commit || m.git.head_sha !== fixture.base_commit)
+        assertSyntheticSource(fixture);
+        if (contract.identity.execution_id !== fixture.execution_id || attempt.execution_id !== fixture.execution_id || attempt.executor !== contract.execution.selected_executor || attempt.attempt_id !== fixture.attempt_id || m.execution_id !== contract.identity.execution_id || m.attempt_id !== attempt.attempt_id || attempt.approved_contract_sha256 !== canonicalHash(contract) || attempt.workspace_root !== fixture.workspace || attempt.base_commit !== fixture.base_commit || m.git.base_sha !== fixture.base_commit || m.git.head_sha !== fixture.base_commit)
             reasons.push('EVIDENCE_BINDING');
         if (canonicalHash(readJson(safePath(dir, 'evidence-manifest.json'))) !== canonicalHash(m))
             reasons.push('MANIFEST_INTEGRITY');

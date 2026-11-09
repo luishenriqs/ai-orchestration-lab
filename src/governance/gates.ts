@@ -9,7 +9,7 @@ import { type Fixture, verifyFixture } from '../execution/fixtures.js';
 import { probeIsolation } from '../execution/synthetic.js';
 import type { ProcessObservation } from '../execution/process.js';
 import { git, safePath, readJson, writeNew } from '../execution/host.js';
-import { assertAttemptConsistent } from '../execution/attempts.js';
+import { assertAttemptConsistent, AttemptStore } from '../execution/attempts.js';
 import { snapshotTree, verifyEvidence } from '../evidence/collector.js';
 import { verifyHandoff } from '../evidence/handoff.js';
 import { verifyApproval, type TrustedApproval } from './approval.js';
@@ -86,6 +86,19 @@ export function validationGate(fixture: Fixture, contract: TaskContract, attempt
         reasons.push('RESULT_BINDING');
     try {
         assertAttemptConsistent(attempt);
+        const runs = path.join(resolveWorkspaceRoot(), 'runs');
+        const persistedDir = safePath(runs, `${fixture.execution_id}/attempts/${fixture.attempt_id}`);
+        // Archived evidence may be read elsewhere, but live gate authorization
+        // always comes from the host journal and its enrolled execution policy.
+        const persisted = new AttemptStore(runs).load(fixture.execution_id, fixture.attempt_id);
+        if (canonicalHash(persisted) !== canonicalHash(attempt) || attempt.execution_id !== contract.identity.execution_id || attempt.executor !== contract.execution.selected_executor)
+            reasons.push('PERSISTED_ATTEMPT_MISMATCH');
+        const savedContract = readJson(safePath(persistedDir, 'contract.json'));
+        const savedApproval = readJson(safePath(persistedDir, 'approval.json')) as ApprovalRecord;
+        const savedPolicy = readJson(safePath(persistedDir, 'host-policy.json')) as ReadinessPolicy;
+        const ready = readJson(safePath(persistedDir, 'task-ready.json')) as GateDecision;
+        if (canonicalHash(savedContract) !== canonicalHash(contract) || savedApproval.approval_id !== attempt.approval_id || !verifyApproval(contract, savedApproval, { scope: 'EXECUTION', trusted: savedPolicy.trusted }).allowed || !ready.allowed || ready.gate !== 'TASK-READY' || ready.execution_id !== attempt.execution_id || ready.attempt_id !== attempt.attempt_id || ready.contract_sha256 !== canonicalHash(contract))
+            reasons.push('PERSISTED_AUTHORIZATION_MISMATCH');
     }
     catch {
         reasons.push('INVALID_ATTEMPT');
@@ -95,6 +108,8 @@ export function validationGate(fixture: Fixture, contract: TaskContract, attempt
     reasons.push(...verifyEvidence(fixture, contract, attempt, manifest, dir));
     try {
         const observation = readJson(safePath(dir, 'executor-observation.json')) as ProcessObservation;
+        if (canonicalHash(observation.process_identity) !== canonicalHash(attempt.process_identity) || !attempt.started_at || !attempt.finished_at || Date.parse(attempt.started_at) < Date.parse(observation.started_at) || Date.parse(attempt.finished_at) < Date.parse(observation.started_at) + observation.duration_ms)
+            reasons.push('PROCESS_OBSERVATION_BINDING');
         if (observation.exit_code !== 0 || observation.termination_reason !== 'NORMAL' || observation.truncated)
             reasons.push('EXECUTOR_FAILED');
         if (!manifest.evidence_integrity.artifact_hashes.some(a => a.path === 'executor-observation.json'))
@@ -146,7 +161,7 @@ export function prGate(fixture: Fixture, contract: TaskContract, attempt: Execut
             reasons.push('UNTRUSTED_REVIEW');
         if (review.execution_id !== attempt.execution_id || review.attempt_id !== attempt.attempt_id || review.reviewed_contract_sha256 !== canonicalHash(contract) || review.reviewed_diff_sha256 !== manifest.git.diff_sha256)
             reasons.push('STALE_REVIEW');
-        if (review.verdict === 'REJECTED' || review.findings.some(f => f.blocking))
+        if (review.verdict === 'REJECTED' || review.findings.some(f => f.blocking || f.severity === 'HIGH' || f.severity === 'CRITICAL'))
             reasons.push('REVIEW_REJECTED');
         if (review.categories_evaluated.length !== REVIEW_CATEGORIES.length || new Set(review.categories_evaluated.map(c => c.category)).size !== REVIEW_CATEGORIES.length)
             reasons.push('INCOMPLETE_REVIEW');

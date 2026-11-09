@@ -1,0 +1,57 @@
+{
+  "schema_version": "0.3-p0",
+  "contract_revision": 1,
+  "identity": {
+    "execution_id": "P1-008-16-536f35ed-6f16-40c3-bb6d-5889e49fde57",
+    "backlog_id": "P1-008",
+    "repository": "synthetic-fixture",
+    "workspace_context_id": "SYNTHETIC_LAB",
+    "workspace_root": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-16-536f35ed-6f16-40c3-bb6d-5889e49fde57/A/workspace",
+    "base_commit": "228c69c8e919cd934f95a7be89acda4a0c9bbffe"
+  },
+  "governance": {
+    "risk_level": "LOW",
+    "approval_required": true
+  },
+  "scope": {
+    "objective": "Synthetic sum returns 3 with host evidence",
+    "allowed_impl_paths": [
+      "src/sum.cjs"
+    ],
+    "allowed_test_paths": [
+      "tests/sum.cjs"
+    ],
+    "forbidden_changes": [
+      "protected.txt"
+    ],
+    "protected_existing_tests": true
+  },
+  "validation": {
+    "strategy": "RED_GREEN",
+    "positive_tests": [
+      "sum(1,2)=3"
+    ],
+    "negative_tests": [
+      "wrong sum rejected"
+    ],
+    "boundary_tests": [
+      "sum(0,0)=0"
+    ],
+    "acceptance_checks": [
+      "Legitimate RED followed by GREEN; protected tests unchanged"
+    ],
+    "validation_commands": [
+      "node tests/sum.cjs"
+    ]
+  },
+  "execution": {
+    "selected_executor": "synthetic",
+    "mode": "CONTROLLED",
+    "timeout_seconds": 10,
+    "retry_limit": 0
+  },
+  "rollback": {
+    "procedure": "Archive observed changes and restore only registered fixture"
+  },
+  "ias_normative_card": null
+}

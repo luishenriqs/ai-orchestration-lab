@@ -1,0 +1,1 @@
+{"changes":[{"content":"bW9kdWxlLmV4cG9ydHM9KGEsYik9PmErYjsK","deleted":false,"path":"src/sum.cjs"}],"tracked_diff":"diff --git a/src/sum.cjs b/src/sum.cjs\nindex 2f07f5a..d2529c2 100644\n--- a/src/sum.cjs\n+++ b/src/sum.cjs\n@@ -1 +1 @@\n-module.exports=(a,b)=>0;\n+module.exports=(a,b)=>a+b;\n"}

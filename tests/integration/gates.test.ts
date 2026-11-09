@@ -1,18 +1,13 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { executeAttempt } from '../../src/execution/adapter.js';
 import { createFixture } from '../../src/execution/fixtures.js';
 import { task, approval } from '../helpers/contracts.js';
 import { canonicalHash } from '../../src/contracts/integrity.js';
 import { trustApproval } from '../../src/governance/approval.js';
 import { taskReady, validationGate, prGate, type ReadinessPolicy } from '../../src/governance/gates.js';
-import { observeTest, collectEvidence, snapshotTree } from '../../src/evidence/collector.js';
-import { createHandoff } from '../../src/evidence/handoff.js';
-import { executeSynthetic, probeIsolation } from '../../src/execution/synthetic.js';
-import { resolveWorkspaceRoot } from '../../src/contracts/schema-loader.js';
-import { REVIEW_CATEGORIES, type ExecutionAttempt, type ReviewReport, type ExecutionResult } from '../../src/contracts/types.js';
+import { REVIEW_CATEGORIES, type ExecutionAttempt, type ReviewReport } from '../../src/contracts/types.js';
 function setup() { const f = createFixture('gate-' + randomUUID(), 'A'); const base = task(f.workspace, f.base_commit); const c = { ...base, identity: { ...base.identity, execution_id: f.execution_id } }; const ap = approval(canonicalHash(c), { execution_id: f.execution_id }); const a: ExecutionAttempt = { schema_version: '0.3-p0', execution_id: c.identity.execution_id, attempt_id: 'A', approval_id: ap.approval_id, approved_contract_sha256: canonicalHash(c), executor: 'synthetic', state: 'CREATED', started_at: null, finished_at: null, termination_reason: null, base_commit: f.base_commit, workspace_root: f.workspace, process_identity: null }; const policy: ReadinessPolicy = { trusted: [trustApproval(ap)], environment_authorized: true, data_classification: 'SYNTHETIC_LAB', required_dependencies: ['P1-002'], completed_dependencies: ['P1-002'], conflict: false }; return { f, c, ap, a, policy }; }
 it('P1-007 TASK-READY rejects every false prerequisite, invalid policies and missing approval', async () => {
     const { f, c, ap, a, policy } = setup();
@@ -24,20 +19,11 @@ it('P1-007 TASK-READY rejects every false prerequisite, invalid policies and mis
         assert.equal((await taskReady(f, bad, ap, a, policy)).allowed, false);
 });
 it('P1-007 gates require observed evidence and current trusted review plus exact MERGE authorization', async () => {
-    const { f, c, a } = setup();
-    const dir = path.join(resolveWorkspaceRoot(), 'runs', f.execution_id);
-    fs.mkdirSync(dir);
-    fs.writeFileSync(path.join(dir, 'isolation-proof.json'), JSON.stringify(await probeIsolation(f)));
-    const security = ['contracts', 'approvals', 'schemas', 'reviews', 'src', 'dist/src'].map(p => ({ path: p, digest: snapshotTree(path.join(resolveWorkspaceRoot(), p)) }));
-    fs.writeFileSync(path.join(dir, 'governance-integrity.json'), JSON.stringify({ before: security, after: security, intact: true }));
-    const red = await observeTest(f, dir, 'red');
-    const o = await executeSynthetic(f, 'SYN-001');
-    const green = await observeTest(f, dir, 'green');
-    fs.writeFileSync(path.join(dir, 'executor-observation.json'), JSON.stringify(o));
-    const completed: ExecutionAttempt = { ...a, state: 'COMPLETED', started_at: o.started_at, finished_at: new Date().toISOString(), process_identity: o.process_identity, termination_reason: 'NORMAL' };
-    const result: ExecutionResult = { schema_version: '0.3-p0', execution_id: c.identity.execution_id, attempt_id: a.attempt_id, executor: 'synthetic', agent_declared_outcome: 'completed', agent_summary: 'SYNTHETIC CLAIM', agent_reported_blockers: [] };
-    const m = collectEvidence(f, c, completed, dir, red, green);
-    const h = createHandoff(c, completed, m, dir);
+    const { f, c, ap: executionApproval, policy: executionPolicy } = setup();
+    const outcome = await executeAttempt(f, c, executionApproval, executionPolicy, 'SYN-001');
+    const { attempt: completed, evidence_dir: dir } = outcome;
+    const m = outcome.manifest!, h = outcome.handoff!, result = outcome.result!;
+    const a = completed;
     const v = validationGate(f, c, completed, m, result, dir, h);
     assert.deepEqual(v.reasons, []);
     assert.equal(v.allowed, true);

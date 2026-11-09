@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { Fixture } from './fixtures.js';
-import { verifyFixture } from './fixtures.js';
+import { verifyFixture, SYNTHETIC_SOURCES } from './fixtures.js';
 import { runProcess, type ProcessObservation, type ProcessOptions } from './process.js';
 import { safePath, writeNew } from './host.js';
 import { sha256 } from '../contracts/integrity.js';
@@ -48,7 +48,10 @@ export async function executeSynthetic(fixture: Fixture, scenario: SyntheticScen
     return runProcess('/usr/bin/bwrap', sandboxArguments(fixture, ['src/sum.cjs'], scripts[scenario], protectedDir), { cwd: fixture.workspace, ...options, timeout_ms: scenario === 'SYN-003' ? Math.min(options.timeout_ms ?? 10000, 1000) : options.timeout_ms ?? 10000, ...(scenario === 'SYN-006' ? { interrupt_after_ms: 100 } : {}) });
 }
 export async function runFixtureTest(fixture: Fixture): Promise<ProcessObservation> {
-    return runProcess('/usr/bin/bwrap', sandboxArguments(fixture, [], "require('./tests/sum.cjs')"), { cwd: fixture.workspace });
+    // Check the actual mounted bytes in the same read-only sandbox before
+    // require(). No executor-controlled code runs for unrecognized programs.
+    const code = `const fs=require('node:fs');if(!${JSON.stringify(SYNTHETIC_SOURCES)}.includes(fs.readFileSync('src/sum.cjs','utf8'))){console.error('UNSUPPORTED_SYNTHETIC_SOURCE');process.exit(2)}require('./tests/sum.cjs')`;
+    return runProcess('/usr/bin/bwrap', sandboxArguments(fixture, [], code), { cwd: fixture.workspace });
 }
 export async function probeIsolation(fixture: Fixture): Promise<{
     preventive: boolean;

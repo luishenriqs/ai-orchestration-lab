@@ -1,0 +1,15 @@
+{
+  "exit_code": 0,
+  "signal": null,
+  "stdout": "completed\n",
+  "stderr": "",
+  "started_at": "2026-11-09T12:19:26.903Z",
+  "duration_ms": 26,
+  "termination_reason": "NORMAL",
+  "process_identity": {
+    "pid": 7334,
+    "process_start_token": "258f355f-0ff8-4c2d-b2da-24b57011a384:124493",
+    "executable": "/usr/bin/bwrap"
+  },
+  "truncated": false
+}

@@ -1,0 +1,12 @@
+{
+  "gate": "TASK-READY",
+  "allowed": false,
+  "reasons": [
+    "INVALID_APPROVAL",
+    "ATTEMPT_BINDING"
+  ],
+  "decided_at": "2026-11-09T12:19:25.095Z",
+  "execution_id": "P1-008-02-ceb34812-7cb4-4ba2-b011-cbed597f8935",
+  "attempt_id": "A",
+  "contract_sha256": "486efaa7fe403d8d6a93fb33388a31fb25add2570f5aa0420732adc6090dbc7c"
+}

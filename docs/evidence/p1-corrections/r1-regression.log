@@ -1,0 +1,145 @@
+
+> ai-orchestration-lab@0.1.0 test:coverage
+> npm run build && node --test --test-isolation=none --test-concurrency=1 --experimental-test-coverage --test-coverage-include='dist/src/**/*.js' --test-reporter=spec 'dist/tests/**/*.test.js'
+
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+✔ P1-007 adapter executes full observed flow and rejects overlapping execution (321.792577ms)
+✔ P1-006 independently observes tracked/deleted/untracked/ignored files, forbidden scope and symlink escape (37.738673ms)
+✔ P1-006 records host RED/GREEN, manifest/diff/log hashes and safe handoff; detects falsification/tampering (221.769966ms)
+✔ P1-006 missing tests and false success remain insufficient, protected test modifications detected (97.627148ms)
+✔ P1-006 handoff rejects symlinks, mismatched hash, secret patterns and unsupported data policy (198.914825ms)
+✔ P1-006 snapshots detect content changes, file addition/removal and symlink substitution (15.728045ms)
+✔ P1-005 preventive isolation denies protected write/chmod/creation/removal and preserves sentinel (58.06169ms)
+✔ P1-005 RED assertion is legitimate, separate GREEN invocation preserves test bytes (106.677559ms)
+✔ P1-005 all ten synthetic behaviors run in exclusive fixtures; negative operations prevented (1492.21022ms)
+✔ P1-005 process failure, ENOENT, bounded output and timeout/interruption reap process groups (240.8703ms)
+✔ P1-007 TASK-READY rejects every false prerequisite, invalid policies and missing approval (117.957914ms)
+✔ P1-007 gates require observed evidence and current trusted review plus exact MERGE authorization (588.671028ms)
+✔ P1-008 recovery audit: stale transition lock is archived with owner proof before reconciliation (18.555744ms)
+✔ P1-008 identity audit: fixture/execution and executor bindings must agree before readiness (27.551794ms)
+✔ R1-001 rejects synthetic source that exits before protected assertions or spoofs their output (67.341167ms)
+✔ R1-002 and R1-003 bind gates to persisted authorization and process and block severe review findings (485.440142ms)
+✔ R1-004 rejects duplicate contract keys before schema validation and hashing (0.498947ms)
+✔ P1-008 #1 Contrato alterado após aprovação. (28.509939ms)
+✔ P1-008 #2 Aprovação inexistente. (24.728375ms)
+✔ P1-008 #3 Resultado falso do executor. (206.359888ms)
+✔ P1-008 #4 Arquivo alterado fora do escopo. (243.907502ms)
+✔ P1-008 #5 Falha parcial. (188.861881ms)
+✔ P1-008 #6 Tentativa interrompida. (227.692169ms)
+✔ P1-008 #7 Revisão obsoleta. (234.255196ms)
+✔ P1-008 #8 Aprovação MERGE vinculada a outra tentativa. (236.081875ms)
+✔ P1-008 #9 Tentativa de alterar registros protegidos. (175.863594ms)
+✔ P1-008 #10 Contrato com schema inválido. (19.36437ms)
+✔ P1-008 #11 Teste tautológico rejeitado antes da fase GREEN. (83.3171ms)
+✔ P1-008 #12 Modificação de teste protegido rejeitada. (237.468555ms)
+✔ P1-008 #13 Symlink escapando do workspace autorizado. (233.886214ms)
+✔ P1-008 #14 Handoff com `workspace_context_id` divergente. (251.729378ms)
+✔ P1-008 #15 Evidência contendo padrão de segredo. (253.666657ms)
+✔ P1-008 #16 Fluxo positivo RED → GREEN com evidências válidas. (240.826634ms)
+✔ P1-004 persists CREATED, rejects duplicates and preserves immutable history through valid terminal states (8.785469ms)
+✔ P1-004 rejects invalid transitions, reasons, traversal and inconsistent CREATED; blocks before start (2.163191ms)
+✔ P1-004 reconciles orphan using real process token, preserves logs and reconstructs stale projection (3.908515ms)
+✔ P1-004 detects journal tampering and leaves genuinely active process RUNNING (2.015832ms)
+✔ P1-004 rollback verifies registration/base/path, archives partial state, restores only owned fixture (40.202888ms)
+▶ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls
+  ✔ resolves workspaceRoot and schemasDir deterministically independent of process.cwd() (0.23638ms)
+  ✔ loads all 7 normative schemas with Draft 2020-12 "$schema" declaration (0.858891ms)
+  ✔ fails closed when schemasDir does not exist or contractType is unknown (1.121889ms)
+  ✔ rejects non-object roots (null, undefined, primitives, arrays) and malformed JSON without unhandled exceptions (0.44714ms)
+  ✔ never mutates frozen input objects and never performs silent type coercion (0.299249ms)
+✔ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls (3.688115ms)
+▶ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02)
+  ✔ (P1) accepts valid minimal TaskContract with ias_normative_card: null and empty arrays (0.155851ms)
+  ✔ (P2) accepts valid complete TaskContract with ias_normative_card (all 18 fields, 6 statuses, and structured test_plan object) (0.56355ms)
+  ✔ (P3) accepts all 5 validation strategies, 4 risk levels, 3 executors, mode CONTROLLED, and retry_limit >= 0 (0.357775ms)
+  ✔ (N1) rejects omission of each of the 9 required top-level fields (0.299206ms)
+  ✔ (N2) rejects omission of required subfields in identity, governance, scope, validation, execution, rollback (0.625966ms)
+  ✔ (N3) rejects omission of any of the 18 fields of ias_normative_card or any of the 4 fields of test_plan (1.539828ms)
+  ✔ (N4, N5, N6) rejects incompatible schema_version, forbidden task_ready field, and additionalProperties at root or subobjects (0.387563ms)
+  ✔ (N7) rejects unknown enum values in strategy, risk_level, selected_executor, mode, and ias_normative_card.status (0.272372ms)
+  ✔ (N8, B1, B2, B3, B4) rejects invalid types, globs, absolute/traversal paths, fractional numbers, empty strings, and malformed test_plan (0.629764ms)
+✔ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02) (5.391288ms)
+▶ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03)
+  ✔ (P1, P2, P3) accepts valid PLAN_ONLY, EXECUTION (with and without optional fields), and MERGE records (0.203514ms)
+  ✔ (N1) rejects omission of any of the 10 required base fields (0.201787ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid versions, scopes, additionalProperties, hashes, and timestamps (0.171451ms)
+  ✔ (B1, B2, B3) enforces MERGE conditional required fields and forbids null/empty strings in all scopes (0.389382ms)
+✔ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03) (1.190868ms)
+▶ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05)
+  ✔ (P1, P2, P3) accepts CREATED, RUNNING with process_identity, and finished attempts with all 9 termination reasons (0.276081ms)
+  ✔ (N1) rejects omission of any of the 13 required fields (0.249317ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid states, termination_reasons, executors, additionalProperties, and dates (0.214626ms)
+  ✔ (B1, B2) enforces unidirectional finished_at -> termination_reason rule and strict process_identity constraints (0.198149ms)
+✔ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05) (1.263332ms)
+▶ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01)
+  ✔ (P1, P2) accepts valid ExecutionResult with empty or populated blockers and non-empty outcome strings (0.159836ms)
+  ✔ (N1, N2, N3, N4, B1, B2) rejects missing fields, injected properties, empty strings, and nulls (0.425716ms)
+✔ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01) (0.874561ms)
+▶ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06)
+  ✔ (P1, P2) accepts initial manifest and complete manifest with TestRunRecords and artifact_hashes (0.31902ms)
+  ✔ (N1, N2, N3, N4) rejects missing fields, non-HOST_OBSERVED origin, additionalProperties, and invalid enums (0.331343ms)
+  ✔ (B1, B2, B3) rejects malformed TestRunRecord, invalid artifact_hashes items, and empty strings in file lists (0.493862ms)
+✔ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06) (1.384304ms)
+▶ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08)
+  ✔ (P1, P2) accepts initial and populated ReviewHandoffPackage across all data classifications and sanitization statuses (0.216244ms)
+  ✔ (N1, N2, N3, N4, N5, B1, B2) rejects missing fields, invalid enums, invalid included_artifacts, and empty/null violations (0.355134ms)
+✔ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08) (0.691464ms)
+▶ 7. ReviewReport validation (P0 §16, DEC-P1-002-09)
+  ✔ (P1, P2, P3) accepts valid reports with/without findings, all 12 categories, all 4 severities, all 3 verdicts, and applicable: false with justification (0.487449ms)
+  ✔ (N1, N2, N3, N4, N5, N6) rejects missing top/finding fields, invalid verdicts/severities/categories, and additionalProperties (0.483288ms)
+  ✔ (B1, B2, B3) enforces conditional justification when applicable === false and rejects string categories or coerced booleans (0.190336ms)
+✔ 7. ReviewReport validation (P0 §16, DEC-P1-002-09) (1.360621ms)
+▶ P1-001 foundation infrastructure
+  ✔ imports compiled foundation constants and validates strict assertions (0.173738ms)
+  ✔ verifies all required laboratory directories exist in the workspace (1.193158ms)
+  ✔ verifies normative specification documents are present and non-empty (0.183875ms)
+✔ P1-001 foundation infrastructure (1.757186ms)
+✔ P1-003 RFC8785 recursive ordering, numeric keys, arrays and Unicode UTF16 (0.199991ms)
+✔ P1-003 RFC8785 appendix B IEEE754 vectors (0.152528ms)
+✔ P1-003 rejects non-JSON, nonfinite, lone surrogates, cycles, sparse arrays and accessors (0.26598ms)
+✔ P1-003 rejects duplicate escaped keys, malformed JSON and overflow at ingestion (0.20745ms)
+✔ P1-003 known SHA256 and equivalent input hash, distinct payloads (0.092031ms)
+✔ P1-003 authentic host record required, exact purpose/revision/hash/identity and revocation (0.892541ms)
+✔ P1-003 MERGE requires exact attempt, diff and review bindings (0.57627ms)
+ℹ tests 80
+ℹ suites 9
+ℹ pass 80
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7127.334378
+ℹ start of coverage report
+ℹ ----------------------------------------------------------------------------------------
+ℹ file                | line % | branch % | funcs % | uncovered lines
+ℹ ----------------------------------------------------------------------------------------
+ℹ dist                |        |          |         | 
+ℹ  src                |        |          |         | 
+ℹ   contracts         |        |          |         | 
+ℹ    integrity.js     | 100.00 |    96.36 |  100.00 | 
+ℹ    schema-loader.js |  82.19 |    77.78 |  100.00 | 22-23 27-28 40-41 54-56 58-59 62-63
+ℹ    types.js         | 100.00 |   100.00 |  100.00 | 
+ℹ    validator.js     |  83.33 |    77.14 |  100.00 | 12-22 88-89 91-105
+ℹ   evidence          |        |          |         | 
+ℹ    collector.js     |  98.47 |    83.64 |  100.00 | 108-109
+ℹ    handoff.js       | 100.00 |    79.31 |  100.00 | 
+ℹ   execution         |        |          |         | 
+ℹ    adapter.js       |  97.47 |    83.87 |  100.00 | 19-20
+ℹ    attempts.js      |  98.58 |    76.19 |  100.00 | 134-135
+ℹ    fixtures.js      | 100.00 |    75.86 |  100.00 | 
+ℹ    host.js          | 100.00 |    92.86 |  100.00 | 
+ℹ    process.js       |  90.32 |    85.19 |  100.00 | 39-41 55-57
+ℹ    synthetic.js     | 100.00 |    89.47 |  100.00 | 
+ℹ   governance        |        |          |         | 
+ℹ    approval.js      |  95.00 |    96.43 |  100.00 | 32-33
+ℹ    gates.js         |  97.35 |    85.05 |  100.00 | 58-59 100-101
+ℹ   index.js          | 100.00 |   100.00 |  100.00 | 
+ℹ   scenarios         |        |          |         | 
+ℹ    p1.js            |  92.58 |    93.62 |   91.67 | 257-259 265-282
+ℹ ----------------------------------------------------------------------------------------
+ℹ all files           |  95.10 |    84.80 |   99.24 | 
+ℹ ----------------------------------------------------------------------------------------
+ℹ end of coverage report

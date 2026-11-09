@@ -1,0 +1,67 @@
+{
+  "official_number": 10,
+  "identifier": "P1-008-10",
+  "objective": "Contrato com schema inválido.",
+  "initial_conditions": "SYNTHETIC_LAB; independent Git fixture; serial host; zero retry; synthetic approval/review inputs only",
+  "procedure": [
+    "Create independent registered Git fixture with deterministic base; enroll explicitly synthetic host authorization",
+    "Submit incompatible schema_version",
+    "Run serial adapter (SYN-001), host TASK-READY/RED/executor/GREEN/collection/handoff/gates"
+  ],
+  "expected": "Reject invalid continuation with preserved evidence",
+  "observed": {
+    "state": "BLOCKED",
+    "task_ready": {
+      "gate": "TASK-READY",
+      "allowed": false,
+      "reasons": [
+        "INVALID_CONTRACT"
+      ],
+      "decided_at": "2026-11-09T12:23:36.718Z",
+      "execution_id": "P1-008-10-20ee8070-32cb-4241-88eb-80bc647ce856",
+      "attempt_id": "A",
+      "contract_sha256": ""
+    },
+    "validation": null
+  },
+  "status": "PASS",
+  "evidence_directory": "/home/luishenriqs/projects/ai-orchestration-lab/docs/evidence/p1-execution/scenarios/run-1a1b9b49-0474-40d6-a003-bae14371bcb9/P1-008-10",
+  "artifacts": [
+    {
+      "path": "attempt/approval.json",
+      "sha256": "5b5158116ae54512ec639d21aa5439b5dc26eaac5361789b0143cd7ec72244b7"
+    },
+    {
+      "path": "attempt/attempt.json",
+      "sha256": "b886edf081166082630d755fe7c7dba6fb133b33158e300274f20dae749c885e"
+    },
+    {
+      "path": "attempt/contract.json",
+      "sha256": "59f24b2952a5fac2e69f1b21b56d0221b49e8d642b2339493228c570a1f30df8"
+    },
+    {
+      "path": "attempt/events/000000.json",
+      "sha256": "46ce2d0ee42bb8353456c57fd005485e3b88863aec757348389e6a95366ac75e"
+    },
+    {
+      "path": "attempt/events/000001.json",
+      "sha256": "d2300476bea92d5ea6114542a25d565cfceaa02ba3d7616c6c15f324397db7b1"
+    },
+    {
+      "path": "attempt/host-policy.json",
+      "sha256": "8bf673489612ba034b3872c2f519341da7af583f788660117f19db05112d540e"
+    },
+    {
+      "path": "attempt/task-ready.json",
+      "sha256": "f41c085a0283e9dd0cab3c38b913f99d1b861907e6c8e9bcb6b063c61c750b57"
+    },
+    {
+      "path": "baseline-files.json",
+      "sha256": "46e39ec41699421b6c5dcd266d0f6de8bd6b8f5f27dd6ef427ec372e8362fab6"
+    },
+    {
+      "path": "fixture-record.json",
+      "sha256": "0f397e8841de6d054349609122248c31efa426fd87476cfe089b21737b3e838a"
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "official_number": 7,
+  "identifier": "P1-008-07",
+  "objective": "Revisão obsoleta.",
+  "initial_conditions": "SYNTHETIC_LAB; independent Git fixture; serial host; zero retry; synthetic approval/review inputs only",
+  "procedure": [
+    "Create independent registered Git fixture with deterministic base; enroll explicitly synthetic host authorization",
+    "Run serial adapter (SYN-001), host TASK-READY/RED/executor/GREEN/collection/handoff/gates",
+    "Use trusted synthetic review for an obsolete diff"
+  ],
+  "expected": "Reject invalid continuation with preserved evidence",
+  "observed": {
+    "state": "COMPLETED",
+    "task_ready": {
+      "gate": "TASK-READY",
+      "allowed": true,
+      "reasons": [],
+      "decided_at": "2026-11-09T12:23:36.134Z",
+      "execution_id": "P1-008-07-a446f4a2-f5ba-47ec-ac31-4c04ab8e8d1c",
+      "attempt_id": "A",
+      "contract_sha256": "43c64579d4401cdf9880f0dff3962cab0cbf314229fe4c452c1b7d29dd784c94"
+    },
+    "validation": {
+      "gate": "ValidationGate",
+      "allowed": true,
+      "reasons": [],
+      "decided_at": "2026-11-09T12:23:36.275Z",
+      "execution_id": "P1-008-07-a446f4a2-f5ba-47ec-ac31-4c04ab8e8d1c",
+      "attempt_id": "A",
+      "contract_sha256": "43c64579d4401cdf9880f0dff3962cab0cbf314229fe4c452c1b7d29dd784c94"
+    },
+    "pr_gate": {
+      "gate": "PR-GATE",
+      "allowed": false,
+      "reasons": [
+        "STALE_REVIEW"
+      ],
+      "decided_at": "2026-11-09T12:23:36.315Z",
+      "execution_id": "P1-008-07-a446f4a2-f5ba-47ec-ac31-4c04ab8e8d1c",
+      "attempt_id": "A",
+      "contract_sha256": "43c64579d4401cdf9880f0dff3962cab0cbf314229fe4c452c1b7d29dd784c94"
+    }
+  },
+  "status": "PASS",
+  "evidence_directory": "/home/luishenriqs/projects/ai-orchestration-lab/docs/evidence/p1-execution/scenarios/run-1a1b9b49-0474-40d6-a003-bae14371bcb9/P1-008-07",
+  "artifacts": [
+    {
+      "path": "attempt/approval.json",
+      "sha256": "36929a51922ed16e59058db874cfa6f10952ee4fbe2125d9106a3d7ff61f19a5"
+    },
+    {
+      "path": "attempt/attempt.json",
+      "sha256": "d01aebff90b130b012353fcd6d72716040a7b6543b602199ff230aeadec2f313"
+    },
+    {
+      "path": "attempt/contract.json",
+      "sha256": "4d2129dd46fe7f60922d148184799ebec886a6d090ce5f041bf746b9ceeb74a5"
+    },
+    {
+      "path": "attempt/diff.bundle.json",
+      "sha256": "1cc15c71517e56b729d97b88a419e232ddead89c275fcede76c3ae82ba660dc4"
+    },
+    {
+      "path": "attempt/events/000000.json",
+      "sha256": "3efc87a74415ad2392a16e43be84ab5ccf8fa0d0d634a077a53b437be0cf9c63"
+    },
+    {
+      "path": "attempt/events/000001.json",
+      "sha256": "13077b75465bed292c494eb2f21df1318de4df2358e424a47a2d0677d9978c41"
+    },
+    {
+      "path": "attempt/events/000002.json",
+      "sha256": "f7467b7c87c3d201e91325abcc1e221d040138b3a3e3ab7991aee5e4b276d2e4"
+    },
+    {
+      "path": "attempt/evidence-manifest.json",
+      "sha256": "2e8eae3c00066aab821a132ab540fb2bd1e01538f6d6d76127022229e62a5dc8"
+    },
+    {
+      "path": "attempt/execution-result.json",
+      "sha256": "fdcc4149d01fc653a8f307a2db5dba3e588d13f4b9d2664fcd88432b4cc027c6"
+    },
+    {
+      "path": "attempt/executor-observation.json",
+      "sha256": "94f9af4d2df22eecc47d06b52748097a903819d3dc4466da8940cd61572c59f8"
+    },
+    {
+      "path": "attempt/governance-integrity.json",
+      "sha256": "9b238bf26562a5961f6dea042078eaa942e05190e681889cc572e9e6c1c80b9c"
+    },
+    {
+      "path": "attempt/green.json",
+      "sha256": "a4d3881597f26e722b9f2a6eadce79db390ae6f1cb8ae04f8f5ad50a20da2d36"
+    },
+    {
+      "path": "attempt/host-policy.json",
+      "sha256": "6d3aeeaaa0995379fcb9d05071ba38db112c5f1e40c23b03bf462fb8abf11952"
+    },
+    {
+      "path": "attempt/isolation-proof.json",
+      "sha256": "dcafc58f51ee944ea077bef2ef38593c31bb62b8c32d46b89a56f843c19dfc3f"
+    },
+    {
+      "path": "attempt/red.json",
+      "sha256": "7c51798b2467b446f1db31477b3ceb70736fcc6daff8d8a5d606142a6baf5755"
+    },
+    {
+      "path": "attempt/review-handoff.json",
+      "sha256": "7d52be7f1985fcb5693293ddf276c862ac428cdcd93cb1404b569ac806c46dd8"
+    },
+    {
+      "path": "attempt/task-ready.json",
+      "sha256": "91845625ffdc9cedcab1dedfda9c86fdfa7e063a60d72fc8a0b410295d736a93"
+    },
+    {
+      "path": "attempt/validation-gate.json",
+      "sha256": "c7849f0f58ca0c35e4efec0e4422d0e5e42e14fab64766adea171f1ee718a0d6"
+    },
+    {
+      "path": "attempt/workspace-observation.json",
+      "sha256": "8cf37051c0649a23abda2da894090b3108e722fbfed981987eeaea59e7c7a188"
+    },
+    {
+      "path": "baseline-files.json",
+      "sha256": "46e39ec41699421b6c5dcd266d0f6de8bd6b8f5f27dd6ef427ec372e8362fab6"
+    },
+    {
+      "path": "fixture-record.json",
+      "sha256": "229eb0242c0d8e07d33953b14418a20955a1213e2a15f232447907a5f8963451"
+    },
+    {
+      "path": "pr-gate.json",
+      "sha256": "0053c70f393dacc686253a9d528f6c71972382e9e5fb84f74cf7f2ca1a474b1a"
+    },
+    {
+      "path": "synthetic-merge-approval.json",
+      "sha256": "8d3747d5b21d35ecef4fb576ea61e2ad0d3f72923270fe7c253e6455981150fc"
+    },
+    {
+      "path": "synthetic-review.json",
+      "sha256": "26ff7361de477449a24985d5eeacb412883755aa712ad23b6273f113f35a525c"
+    }
+  ]
+}

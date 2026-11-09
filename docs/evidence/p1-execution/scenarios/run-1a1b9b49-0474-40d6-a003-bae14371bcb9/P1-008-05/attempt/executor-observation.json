@@ -1,0 +1,15 @@
+{
+  "exit_code": 2,
+  "signal": null,
+  "stdout": "",
+  "stderr": "SYN_PARTIAL_FAILURE\n",
+  "started_at": "2026-11-09T12:23:35.754Z",
+  "duration_ms": 23,
+  "termination_reason": "PROCESS_FAILURE",
+  "process_identity": {
+    "pid": 15846,
+    "process_start_token": "258f355f-0ff8-4c2d-b2da-24b57011a384:149379",
+    "executable": "/usr/bin/bwrap"
+  },
+  "truncated": false
+}

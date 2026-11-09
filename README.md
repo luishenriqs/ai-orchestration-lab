@@ -91,6 +91,14 @@ npm test
 
 ## 7. Estrutura de Diretórios
 
+A P1 executa somente programas sintéticos fixos. Antes de carregar a implementação
+nos testes, o host verifica os bytes contra a lista de fontes sintéticas conhecidas;
+conteúdo desconhecido produz ERROR e bloqueia a validação. O gate repete essa
+verificação e exige a tentativa integral do journal, a autorização EXECUTION e
+TASK-READY persistidos, além da identidade do processo observado. Evidências
+arquivadas permitem inspeção; decisões de avanço exigem o journal host em `runs/`.
+Achados HIGH/CRITICAL bloqueiam PR-GATE mesmo quando `blocking` é falso.
+
 ```text
 ai-orchestration-lab/
 ├── docs/

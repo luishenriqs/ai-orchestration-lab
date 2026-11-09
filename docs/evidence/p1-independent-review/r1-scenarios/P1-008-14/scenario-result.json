@@ -1,0 +1,128 @@
+{
+  "official_number": 14,
+  "identifier": "P1-008-14",
+  "objective": "Handoff com `workspace_context_id` divergente.",
+  "initial_conditions": "SYNTHETIC_LAB; independent Git fixture; serial host; zero retry; synthetic approval/review inputs only",
+  "procedure": [
+    "Create independent registered Git fixture with deterministic base; enroll explicitly synthetic host authorization",
+    "Run serial adapter (SYN-001), host TASK-READY/RED/executor/GREEN/collection/handoff/gates"
+  ],
+  "expected": "Reject invalid continuation with preserved evidence",
+  "observed": {
+    "state": "COMPLETED",
+    "task_ready": {
+      "gate": "TASK-READY",
+      "allowed": true,
+      "reasons": [],
+      "decided_at": "2026-11-09T12:19:27.086Z",
+      "execution_id": "P1-008-14-a3351c12-43b8-47c8-b48b-a8025fdc150c",
+      "attempt_id": "A",
+      "contract_sha256": "2238cf7d96185eb43bed5a383d8039bfd8f3565276e3ff435b7c77c760410fe3"
+    },
+    "validation": {
+      "gate": "ValidationGate",
+      "allowed": true,
+      "reasons": [],
+      "decided_at": "2026-11-09T12:19:27.219Z",
+      "execution_id": "P1-008-14-a3351c12-43b8-47c8-b48b-a8025fdc150c",
+      "attempt_id": "A",
+      "contract_sha256": "2238cf7d96185eb43bed5a383d8039bfd8f3565276e3ff435b7c77c760410fe3"
+    }
+  },
+  "status": "PASS",
+  "evidence_directory": "/home/luishenriqs/projects/ai-orchestration-lab/docs/evidence/p1-independent-review/r1-scenarios/P1-008-14",
+  "artifacts": [
+    {
+      "path": "attempt/approval.json",
+      "sha256": "76f169124f9c14045d5ad2e1992ac6815409ea70146bea4fda786985a6183dd9"
+    },
+    {
+      "path": "attempt/attempt.json",
+      "sha256": "3f0f5761e16d357efa08d0562dcb35d3bc56ee0328be9e0dc346026977c2ecd9"
+    },
+    {
+      "path": "attempt/contract.json",
+      "sha256": "655106f5d85302e1cd6bb2f3e16f13fd275e492813332f68ee3e16bcdd835074"
+    },
+    {
+      "path": "attempt/diff.bundle.json",
+      "sha256": "1cc15c71517e56b729d97b88a419e232ddead89c275fcede76c3ae82ba660dc4"
+    },
+    {
+      "path": "attempt/events/000000.json",
+      "sha256": "ae9d6901666f971c7bc33b316d5cb633e4d9872152ffec6f7a795fbbd0158af1"
+    },
+    {
+      "path": "attempt/events/000001.json",
+      "sha256": "ab578a29c718cf8a116c100c2884ceb725a865b86898068ea8a64ca5dbbb2bdf"
+    },
+    {
+      "path": "attempt/events/000002.json",
+      "sha256": "1754be698be34d6c25adc9da01e7d25532acdcaae036711058288d56e0a0ca56"
+    },
+    {
+      "path": "attempt/evidence-manifest.json",
+      "sha256": "27762266f436e69e414d178df6d008e8b41073376f591e4ac70bd40d92411b7e"
+    },
+    {
+      "path": "attempt/execution-result.json",
+      "sha256": "b994fe0eb8a189825b53fc7dec8138eb11764e0c3df5d3fa5f55f24e7005c4d0"
+    },
+    {
+      "path": "attempt/executor-observation.json",
+      "sha256": "b951ecaad5f197945fe99332df37834694e4fdfc7adb38abc099940a806533d4"
+    },
+    {
+      "path": "attempt/governance-integrity.json",
+      "sha256": "218c5ea845129a9abbc1543d0881361afd3274aa29b22b60f81c5a5481d6af61"
+    },
+    {
+      "path": "attempt/green.json",
+      "sha256": "6e0dc0544ec164c792eebe5730f75872a75db18063f6d249c02fa709386b4b44"
+    },
+    {
+      "path": "attempt/host-policy.json",
+      "sha256": "6581c1a960aa972195773487daa5ee8dc5c26a2e561a0a3a80758a913b99d465"
+    },
+    {
+      "path": "attempt/isolation-proof.json",
+      "sha256": "f86f9d3d6d4f1f25f47240a6e611c8377dfa1d0de0975e22cdf1439cca40edf0"
+    },
+    {
+      "path": "attempt/red.json",
+      "sha256": "4fffd9fac77406d3e3c6abba305ea32c2cb52074a19f38097d43b6875b974c51"
+    },
+    {
+      "path": "attempt/review-handoff.json",
+      "sha256": "0b3e093ebe37f64d7875a5cdbd8930518bc4a7a790c29cfcc70f936d32cbb884"
+    },
+    {
+      "path": "attempt/task-ready.json",
+      "sha256": "ad30bba49073062e3eae6b65f8fb33f79f060a0177134e0b4adbcfc3c412bf22"
+    },
+    {
+      "path": "attempt/validation-gate.json",
+      "sha256": "0a5e4799188b15da724db3e9ccfbf32f56a4df64016dcafa06a516124a2b20ee"
+    },
+    {
+      "path": "attempt/workspace-observation.json",
+      "sha256": "8cf37051c0649a23abda2da894090b3108e722fbfed981987eeaea59e7c7a188"
+    },
+    {
+      "path": "baseline-files.json",
+      "sha256": "46e39ec41699421b6c5dcd266d0f6de8bd6b8f5f27dd6ef427ec372e8362fab6"
+    },
+    {
+      "path": "fixture-record.json",
+      "sha256": "3d55869c1907945fa447c9cf722b7c3690cffae57e7b5dc4ee75ccba237affd8"
+    },
+    {
+      "path": "handoff-validation-gate.json",
+      "sha256": "f08c661b92ef9bfd6783e3f5b1b0855e75385284dee87469dc3fe4196fded501"
+    },
+    {
+      "path": "invalid-handoff.json",
+      "sha256": "3c0fa14ff9aa8b1427d4af7232e5ef8f1fade8945a60e705a0cb02b41ae62456"
+    }
+  ]
+}

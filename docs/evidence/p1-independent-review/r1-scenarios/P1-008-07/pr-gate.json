@@ -1,0 +1,11 @@
+{
+  "gate": "PR-GATE",
+  "allowed": false,
+  "reasons": [
+    "STALE_REVIEW"
+  ],
+  "decided_at": "2026-11-09T12:19:26.129Z",
+  "execution_id": "P1-008-07-50714a73-5754-40ea-b8ff-8c4e274083ab",
+  "attempt_id": "A",
+  "contract_sha256": "8c0457a2c26d7af163ac639e9e1f7dc01083110ca594442357a41cae86f64c50"
+}

@@ -1,0 +1,11 @@
+{
+  "gate": "ValidationGate",
+  "allowed": false,
+  "reasons": [
+    "HANDOFF_CONTEXT"
+  ],
+  "decided_at": "2026-11-09T12:19:27.265Z",
+  "execution_id": "P1-008-14-a3351c12-43b8-47c8-b48b-a8025fdc150c",
+  "attempt_id": "A",
+  "contract_sha256": "2238cf7d96185eb43bed5a383d8039bfd8f3565276e3ff435b7c77c760410fe3"
+}

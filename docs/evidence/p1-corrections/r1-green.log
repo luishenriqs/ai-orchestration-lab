@@ -1,0 +1,11 @@
+✔ R1-001 rejects synthetic source that exits before protected assertions or spoofs their output (71.186806ms)
+✔ R1-002 and R1-003 bind gates to persisted authorization and process and block severe review findings (562.164366ms)
+✔ R1-004 rejects duplicate contract keys before schema validation and hashing (0.443574ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 673.636893

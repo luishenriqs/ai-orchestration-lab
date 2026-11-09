@@ -1,0 +1,9 @@
+{
+  "schema_version": "0.3-p0",
+  "execution_id": "P1-008-03-099e12ca-686c-4067-9329-07d157f15883",
+  "attempt_id": "A",
+  "executor": "synthetic",
+  "agent_declared_outcome": "completed",
+  "agent_summary": "completed: all tests pass (UNTRUSTED CLAIM)",
+  "agent_reported_blockers": []
+}

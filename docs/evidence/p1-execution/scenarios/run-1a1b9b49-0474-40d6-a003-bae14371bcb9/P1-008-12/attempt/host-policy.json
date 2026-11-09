@@ -1,0 +1,19 @@
+{
+  "trusted": [
+    {
+      "record_sha256": "321bad3391c5d45920d69c594ad8e25446a8c09a58cd9e1625ee639c9ba8395c",
+      "authorized_by": "SYNTHETIC_OWNER_NOT_REAL_HUMAN_APPROVAL",
+      "approval_source": "SYNTHETIC_LAB_ONLY",
+      "revoked": false
+    }
+  ],
+  "environment_authorized": true,
+  "data_classification": "SYNTHETIC_LAB",
+  "required_dependencies": [
+    "P1-002"
+  ],
+  "completed_dependencies": [
+    "P1-002"
+  ],
+  "conflict": false
+}

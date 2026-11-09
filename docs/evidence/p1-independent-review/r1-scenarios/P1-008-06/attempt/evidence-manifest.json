@@ -1,0 +1,69 @@
+{
+  "schema_version": "0.3-p0",
+  "execution_id": "P1-008-06-929d704a-1a37-4cba-bc08-90df02ef6d46",
+  "attempt_id": "A",
+  "evidence_origin": "HOST_OBSERVED",
+  "git": {
+    "base_sha": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "head_sha": "228c69c8e919cd934f95a7be89acda4a0c9bbffe",
+    "dirty_worktree_files": [
+      "src/sum.cjs"
+    ],
+    "diff_sha256": "2de6c51c371cc5442a2cd94bd335788bf0d41340742acf4d3f42abae8ccfe0c4"
+  },
+  "test_evidence": {
+    "strategy": "RED_GREEN",
+    "red": {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-06-929d704a-1a37-4cba-bc08-90df02ef6d46/A/workspace",
+      "started_at": "2026-11-09T12:19:25.717Z",
+      "duration_ms": 24,
+      "exit_code": 1,
+      "log_path": "red.json",
+      "log_sha256": "888e68f45e9793d90b0ba45c31dd3beefb6288aef121506efd2b9309bf1ec596",
+      "observed_outcome": "FAIL"
+    },
+    "green": null,
+    "baseline": null
+  },
+  "independent_test_runs": [
+    {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/P1-008-06-929d704a-1a37-4cba-bc08-90df02ef6d46/A/workspace",
+      "started_at": "2026-11-09T12:19:25.717Z",
+      "duration_ms": 24,
+      "exit_code": 1,
+      "log_path": "red.json",
+      "log_sha256": "888e68f45e9793d90b0ba45c31dd3beefb6288aef121506efd2b9309bf1ec596",
+      "observed_outcome": "FAIL"
+    }
+  ],
+  "scope_validation": {
+    "result": "PASS",
+    "unexpected_files": []
+  },
+  "evidence_integrity": {
+    "artifact_hashes": [
+      {
+        "path": "diff.bundle.json",
+        "sha256": "2de6c51c371cc5442a2cd94bd335788bf0d41340742acf4d3f42abae8ccfe0c4"
+      },
+      {
+        "path": "workspace-observation.json",
+        "sha256": "4f8482a1650b8721d7e1e0bce42137cc2c5da2c8114ae1603977a89a38ae291b"
+      },
+      {
+        "path": "executor-observation.json",
+        "sha256": "0645bc11671480cc1c917b6762ae6650272079f9dfdba44f4b3a1795e06579eb"
+      },
+      {
+        "path": "isolation-proof.json",
+        "sha256": "bc48bd7282cb9eb33e4e6aea5531de338c93bf4812eae54047df06c0a8efe8de"
+      },
+      {
+        "path": "red.json",
+        "sha256": "888e68f45e9793d90b0ba45c31dd3beefb6288aef121506efd2b9309bf1ec596"
+      }
+    ]
+  }
+}

@@ -5,6 +5,7 @@ import {
 } from 'ajv/dist/2020.js';
 import addFormatsPlugin from 'ajv-formats';
 import { loadAllContractSchemas } from './schema-loader.js';
+import { parseCanonicalJson } from './integrity.js';
 import {
   CONTRACT_TYPES,
   type ApprovalRecord,
@@ -167,7 +168,7 @@ export function createContractValidator(
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(rawJson);
+      parsed = parseCanonicalJson(rawJson);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Invalid JSON string';

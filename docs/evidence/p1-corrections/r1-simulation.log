@@ -1,0 +1,9 @@
+
+> ai-orchestration-lab@0.1.0 simulate
+> npm run build && node dist/src/cli/main.js simulate
+
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+{"run_id":"run-1a1b9b49-0474-40d6-a003-bae14371bcb9","passed":16,"failed":0,"blocked":0}

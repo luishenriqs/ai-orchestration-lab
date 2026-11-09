@@ -12,6 +12,19 @@ export interface Fixture {
     readonly record_path: string;
 }
 export const RED_TEST = "const assert=require('node:assert/strict');const sum=require('../src/sum.cjs');assert.equal(sum(1,2),3,'SYN_EXPECT_SUM_3');assert.equal(sum(0,0),0);console.log('SYN_TEST_PASS');\n";
+// P1 runs these fixed synthetic programs only. Unknown source must never be
+// loaded into the protected assertion process, where it could exit or patch it.
+export const SYNTHETIC_SOURCES = Object.freeze([
+    'module.exports=(a,b)=>0;\n',
+    'module.exports=(a,b)=>a+b;\n',
+    '// partial change\nmodule.exports=()=>0;',
+    '// interrupted\nmodule.exports=()=>0;',
+]);
+export function assertSyntheticSource(fixture: Fixture): void {
+    verifyFixture(fixture);
+    if (!SYNTHETIC_SOURCES.includes(fs.readFileSync(safePath(fixture.workspace, 'src/sum.cjs'), 'utf8')))
+        throw Error('UNSUPPORTED_SYNTHETIC_SOURCE');
+}
 export function createFixture(execution: string, attempt: string, testKind: 'functional' | 'tautological' = 'functional'): Fixture {
     const lab = resolveWorkspaceRoot();
     const fixtures = path.join(lab, 'worktrees');

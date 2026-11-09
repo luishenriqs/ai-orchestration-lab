@@ -1,0 +1,66 @@
+{
+  "baseline": {
+    "gate": "ValidationGate",
+    "allowed": true,
+    "reasons": [],
+    "decided_at": "2026-11-09T12:19:24.808Z",
+    "execution_id": "independent-4cce9a69-f42f-44af-9918-244c17b01a22",
+    "attempt_id": "A",
+    "contract_sha256": "af37f27b8ca47dcf413e75546f8a68dff4c4a41237767084ffe1dfab10b012bd"
+  },
+  "forged_attempt": {
+    "gate": "ValidationGate",
+    "allowed": true,
+    "reasons": [],
+    "decided_at": "2026-11-09T12:19:24.841Z",
+    "execution_id": "UNRELATED-EXECUTION",
+    "attempt_id": "A",
+    "contract_sha256": "af37f27b8ca47dcf413e75546f8a68dff4c4a41237767084ffe1dfab10b012bd"
+  },
+  "high_nonblocking": {
+    "gate": "PR-GATE",
+    "allowed": true,
+    "reasons": [],
+    "decided_at": "2026-11-09T12:19:24.875Z",
+    "execution_id": "independent-4cce9a69-f42f-44af-9918-244c17b01a22",
+    "attempt_id": "A",
+    "contract_sha256": "af37f27b8ca47dcf413e75546f8a68dff4c4a41237767084ffe1dfab10b012bd"
+  },
+  "duplicate_key": {
+    "accepted": true,
+    "hash_unchanged": true
+  },
+  "false_green": {
+    "red": {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/independent-spoof-4bbe61f5-a130-4e5f-a52f-81a999ca3cfd/A/workspace",
+      "started_at": "2026-11-09T12:19:24.923Z",
+      "duration_ms": 26,
+      "exit_code": 1,
+      "log_path": "red.json",
+      "log_sha256": "6bc6246fd883d5e324a0069e4cc4c7adfffb763ce0160da8ba882f1778e3ea58",
+      "observed_outcome": "FAIL"
+    },
+    "green": {
+      "command": "node tests/sum.cjs",
+      "working_directory": "/home/luishenriqs/projects/ai-orchestration-lab/worktrees/independent-spoof-4bbe61f5-a130-4e5f-a52f-81a999ca3cfd/A/workspace",
+      "started_at": "2026-11-09T12:19:24.977Z",
+      "duration_ms": 23,
+      "exit_code": 0,
+      "log_path": "green.json",
+      "log_sha256": "f4ef538a6a684b7904163d487192abd13b5d0cb05167fb6a3e8653acf9830c4b",
+      "observed_outcome": "PASS"
+    },
+    "source": "console.log('SYN_TEST_PASS');process.exit(0);module.exports=()=>999;",
+    "gate": {
+      "gate": "ValidationGate",
+      "allowed": true,
+      "reasons": [],
+      "decided_at": "2026-11-09T12:19:25.046Z",
+      "execution_id": "independent-spoof-4bbe61f5-a130-4e5f-a52f-81a999ca3cfd",
+      "attempt_id": "A",
+      "contract_sha256": "492f7b03487435f9e3ab1b69e288af066635055c0603b91cc2e95d7aba10ce21"
+    },
+    "evidence_dir": "/home/luishenriqs/projects/ai-orchestration-lab/runs/independent-spoof-4bbe61f5-a130-4e5f-a52f-81a999ca3cfd"
+  }
+}

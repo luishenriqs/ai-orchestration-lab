@@ -1,0 +1,15 @@
+{
+  "gate": "ValidationGate",
+  "allowed": false,
+  "reasons": [
+    "EXECUTION_NOT_COMPLETED",
+    "WORKSPACE_CHANGED",
+    "PROTECTED_TEST_CHANGED",
+    "MISSING_GREEN",
+    "EXECUTOR_FAILED"
+  ],
+  "decided_at": "2026-11-09T12:19:26.816Z",
+  "execution_id": "P1-008-12-49f815b8-17d2-4f40-bc8d-6b598fa1cf19",
+  "attempt_id": "A",
+  "contract_sha256": "86e1a9c561b6083c191fa3302aabdcb09565b1a1480bf2b7343b470bccabdd63"
+}

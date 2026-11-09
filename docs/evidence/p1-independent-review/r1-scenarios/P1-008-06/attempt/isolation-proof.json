@@ -1,0 +1,20 @@
+{
+  "preventive": true,
+  "observation": {
+    "exit_code": 0,
+    "signal": null,
+    "stdout": "PREVENTION_PROVED\n",
+    "stderr": "",
+    "started_at": "2026-11-09T12:19:25.689Z",
+    "duration_ms": 25,
+    "termination_reason": "NORMAL",
+    "process_identity": {
+      "pid": 6691,
+      "process_start_token": "258f355f-0ff8-4c2d-b2da-24b57011a384:124372",
+      "executable": "/usr/bin/bwrap"
+    },
+    "truncated": false
+  },
+  "before": "02b2735d7817d1b99f797d0e1f5f02f7319faedab54c5ad98b145a61c3576746",
+  "after": "02b2735d7817d1b99f797d0e1f5f02f7319faedab54c5ad98b145a61c3576746"
+}

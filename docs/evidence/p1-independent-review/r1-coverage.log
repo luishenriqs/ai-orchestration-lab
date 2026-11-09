@@ -1,0 +1,972 @@
+
+> ai-orchestration-lab@0.1.0 test:coverage
+> npm run build && node --test --test-isolation=none --test-concurrency=1 --experimental-test-coverage --test-coverage-include='dist/src/**/*.js' --test-reporter=spec 'dist/tests/**/*.test.js'
+
+
+> ai-orchestration-lab@0.1.0 build
+> tsc
+
+✖ P1-007 adapter executes full observed flow and rejects overlapping execution (14.55794ms)
+✖ P1-006 independently observes tracked/deleted/untracked/ignored files, forbidden scope and symlink escape (5.019848ms)
+✖ P1-006 records host RED/GREEN, manifest/diff/log hashes and safe handoff; detects falsification/tampering (7.494383ms)
+✖ P1-006 missing tests and false success remain insufficient, protected test modifications detected (5.705923ms)
+✖ P1-006 handoff rejects symlinks, mismatched hash, secret patterns and unsupported data policy (4.577406ms)
+✖ P1-006 snapshots detect content changes, file addition/removal and symlink substitution (4.076773ms)
+✖ P1-005 preventive isolation denies protected write/chmod/creation/removal and preserves sentinel (5.498277ms)
+✖ P1-005 RED assertion is legitimate, separate GREEN invocation preserves test bytes (4.563065ms)
+✖ P1-005 all ten synthetic behaviors run in exclusive fixtures; negative operations prevented (4.275528ms)
+✖ P1-005 process failure, ENOENT, bounded output and timeout/interruption reap process groups (59.467334ms)
+✖ P1-007 TASK-READY rejects every false prerequisite, invalid policies and missing approval (4.953857ms)
+✖ P1-007 gates require observed evidence and current trusted review plus exact MERGE authorization (5.025913ms)
+✖ P1-008 recovery audit: stale transition lock is archived with owner proof before reconciliation (5.228573ms)
+✖ P1-008 identity audit: fixture/execution and executor bindings must agree before readiness (5.456115ms)
+✖ P1-008 #1 Contrato alterado após aprovação. (5.470729ms)
+✖ P1-008 #2 Aprovação inexistente. (4.725671ms)
+✖ P1-008 #3 Resultado falso do executor. (4.277022ms)
+✖ P1-008 #4 Arquivo alterado fora do escopo. (3.792373ms)
+✖ P1-008 #5 Falha parcial. (5.165392ms)
+✖ P1-008 #6 Tentativa interrompida. (5.324158ms)
+✖ P1-008 #7 Revisão obsoleta. (4.39126ms)
+✖ P1-008 #8 Aprovação MERGE vinculada a outra tentativa. (4.236679ms)
+✖ P1-008 #9 Tentativa de alterar registros protegidos. (6.672889ms)
+✖ P1-008 #10 Contrato com schema inválido. (4.180385ms)
+✖ P1-008 #11 Teste tautológico rejeitado antes da fase GREEN. (6.962722ms)
+✖ P1-008 #12 Modificação de teste protegido rejeitada. (4.660676ms)
+✖ P1-008 #13 Symlink escapando do workspace autorizado. (3.945706ms)
+✖ P1-008 #14 Handoff com `workspace_context_id` divergente. (4.60015ms)
+✖ P1-008 #15 Evidência contendo padrão de segredo. (5.750133ms)
+✖ P1-008 #16 Fluxo positivo RED → GREEN com evidências válidas. (4.414056ms)
+✔ P1-004 persists CREATED, rejects duplicates and preserves immutable history through valid terminal states (100.276983ms)
+✔ P1-004 rejects invalid transitions, reasons, traversal and inconsistent CREATED; blocks before start (2.405075ms)
+✔ P1-004 reconciles orphan using real process token, preserves logs and reconstructs stale projection (5.47589ms)
+✔ P1-004 detects journal tampering and leaves genuinely active process RUNNING (2.932773ms)
+✖ P1-004 rollback verifies registration/base/path, archives partial state, restores only owned fixture (4.296415ms)
+▶ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls
+  ✔ resolves workspaceRoot and schemasDir deterministically independent of process.cwd() (0.255629ms)
+  ✔ loads all 7 normative schemas with Draft 2020-12 "$schema" declaration (0.798635ms)
+  ✔ fails closed when schemasDir does not exist or contractType is unknown (1.202451ms)
+  ✔ rejects non-object roots (null, undefined, primitives, arrays) and malformed JSON without unhandled exceptions (2.926168ms)
+  ✔ never mutates frozen input objects and never performs silent type coercion (0.873774ms)
+✔ P1-002 — Infrastructure, Schema Loader & Fail-Closed Controls (6.687969ms)
+▶ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02)
+  ✔ (P1) accepts valid minimal TaskContract with ias_normative_card: null and empty arrays (0.598101ms)
+  ✔ (P2) accepts valid complete TaskContract with ias_normative_card (all 18 fields, 6 statuses, and structured test_plan object) (1.897586ms)
+  ✔ (P3) accepts all 5 validation strategies, 4 risk levels, 3 executors, mode CONTROLLED, and retry_limit >= 0 (2.845455ms)
+  ✔ (N1) rejects omission of each of the 9 required top-level fields (0.399993ms)
+  ✔ (N2) rejects omission of required subfields in identity, governance, scope, validation, execution, rollback (0.788636ms)
+  ✔ (N3) rejects omission of any of the 18 fields of ias_normative_card or any of the 4 fields of test_plan (0.917371ms)
+  ✔ (N4, N5, N6) rejects incompatible schema_version, forbidden task_ready field, and additionalProperties at root or subobjects (0.378791ms)
+  ✔ (N7) rejects unknown enum values in strategy, risk_level, selected_executor, mode, and ias_normative_card.status (0.253179ms)
+  ✔ (N8, B1, B2, B3, B4) rejects invalid types, globs, absolute/traversal paths, fractional numbers, empty strings, and malformed test_plan (0.75363ms)
+✔ 1. TaskContract validation (P0 §9, DEC-P1-002-01, DEC-P1-002-02) (9.980184ms)
+▶ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03)
+  ✔ (P1, P2, P3) accepts valid PLAN_ONLY, EXECUTION (with and without optional fields), and MERGE records (0.81512ms)
+  ✔ (N1) rejects omission of any of the 10 required base fields (0.278803ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid versions, scopes, additionalProperties, hashes, and timestamps (0.199478ms)
+  ✔ (B1, B2, B3) enforces MERGE conditional required fields and forbids null/empty strings in all scopes (0.425175ms)
+✔ 2. ApprovalRecord validation (P0 §10, DEC-P1-002-03) (2.026786ms)
+▶ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05)
+  ✔ (P1, P2, P3) accepts CREATED, RUNNING with process_identity, and finished attempts with all 9 termination reasons (0.316407ms)
+  ✔ (N1) rejects omission of any of the 13 required fields (0.266839ms)
+  ✔ (N2, N3, N4, N5, N6) rejects invalid states, termination_reasons, executors, additionalProperties, and dates (0.206167ms)
+  ✔ (B1, B2) enforces unidirectional finished_at -> termination_reason rule and strict process_identity constraints (0.208746ms)
+✔ 3. ExecutionAttempt validation (P0 §11, DEC-P1-002-04, DEC-P1-002-05) (1.247919ms)
+▶ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01)
+  ✔ (P1, P2) accepts valid ExecutionResult with empty or populated blockers and non-empty outcome strings (0.454403ms)
+  ✔ (N1, N2, N3, N4, B1, B2) rejects missing fields, injected properties, empty strings, and nulls (0.359178ms)
+✔ 4. ExecutionResult validation (P0 §12, DEC-P1-002-01) (1.006124ms)
+▶ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06)
+  ✔ (P1, P2) accepts initial manifest and complete manifest with TestRunRecords and artifact_hashes (1.646675ms)
+  ✔ (N1, N2, N3, N4) rejects missing fields, non-HOST_OBSERVED origin, additionalProperties, and invalid enums (0.551897ms)
+  ✔ (B1, B2, B3) rejects malformed TestRunRecord, invalid artifact_hashes items, and empty strings in file lists (1.536283ms)
+✔ 5. EvidenceManifest validation (P0 §13, DEC-P1-002-06) (4.174835ms)
+▶ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08)
+  ✔ (P1, P2) accepts initial and populated ReviewHandoffPackage across all data classifications and sanitization statuses (1.034337ms)
+  ✔ (N1, N2, N3, N4, N5, B1, B2) rejects missing fields, invalid enums, invalid included_artifacts, and empty/null violations (0.511659ms)
+✔ 6. ReviewHandoffPackage validation (P0 §15, DEC-P1-002-07, DEC-P1-002-08) (1.774423ms)
+▶ 7. ReviewReport validation (P0 §16, DEC-P1-002-09)
+  ✔ (P1, P2, P3) accepts valid reports with/without findings, all 12 categories, all 4 severities, all 3 verdicts, and applicable: false with justification (1.461449ms)
+  ✔ (N1, N2, N3, N4, N5, N6) rejects missing top/finding fields, invalid verdicts/severities/categories, and additionalProperties (0.516942ms)
+  ✔ (B1, B2, B3) enforces conditional justification when applicable === false and rejects string categories or coerced booleans (0.302688ms)
+✔ 7. ReviewReport validation (P0 §16, DEC-P1-002-09) (2.501162ms)
+▶ P1-001 foundation infrastructure
+  ✔ imports compiled foundation constants and validates strict assertions (0.129643ms)
+  ✔ verifies all required laboratory directories exist in the workspace (1.441198ms)
+  ✔ verifies normative specification documents are present and non-empty (0.220623ms)
+✔ P1-001 foundation infrastructure (2.015315ms)
+✔ P1-003 RFC8785 recursive ordering, numeric keys, arrays and Unicode UTF16 (0.251487ms)
+✔ P1-003 RFC8785 appendix B IEEE754 vectors (0.250921ms)
+✔ P1-003 rejects non-JSON, nonfinite, lone surrogates, cycles, sparse arrays and accessors (0.302721ms)
+✔ P1-003 rejects duplicate escaped keys, malformed JSON and overflow at ingestion (0.180611ms)
+✔ P1-003 known SHA256 and equivalent input hash, distinct payloads (0.091134ms)
+✔ P1-003 authentic host record required, exact purpose/revision/hash/identity and revocation (1.017632ms)
+✔ P1-003 MERGE requires exact attempt, diff and review bindings (0.477772ms)
+ℹ tests 77
+ℹ suites 9
+ℹ pass 46
+ℹ fail 31
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 468.468576
+ℹ start of coverage report
+ℹ ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ file                | line % | branch % | funcs % | uncovered lines
+ℹ ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ dist                |        |          |         | 
+ℹ  src                |        |          |         | 
+ℹ   contracts         |        |          |         | 
+ℹ    integrity.js     |  93.41 |    92.45 |  100.00 | 59-61 75-77
+ℹ    schema-loader.js |  82.19 |    77.78 |  100.00 | 22-23 27-28 40-41 54-56 58-59 62-63
+ℹ    types.js         | 100.00 |   100.00 |  100.00 | 
+ℹ    validator.js     |  83.23 |    77.14 |  100.00 | 11-21 87-88 90-104
+ℹ   evidence          |        |          |         | 
+ℹ    collector.js     |  10.77 |   100.00 |    0.00 | 9-29 31-37 39-49 51-114 117-129
+ℹ    handoff.js       |  18.52 |   100.00 |    0.00 | 8-10 12-17 19-53
+ℹ   execution         |        |          |         | 
+ℹ    adapter.js       |  18.99 |   100.00 |    0.00 | 14-31 33-78
+ℹ    attempts.js      |  93.62 |    75.32 |  100.00 | 90-94 132-135
+ℹ    fixtures.js      |  39.74 |   100.00 |   33.33 | 29-41 44-77
+ℹ    host.js          | 100.00 |    76.19 |  100.00 | 
+ℹ    process.js       |  90.32 |    59.09 |   63.64 | 39-41 55-57
+ℹ    synthetic.js     |  39.68 |   100.00 |    0.00 | 10-25 39-47 49-50 52-62
+ℹ   governance        |        |          |         | 
+ℹ    approval.js      |  95.00 |    96.43 |  100.00 | 32-33
+ℹ    gates.js         |  13.24 |   100.00 |    0.00 | 14-16 18-61 63-105 107-130 132-135
+ℹ   index.js          | 100.00 |   100.00 |  100.00 | 
+ℹ   scenarios         |        |          |         | 
+ℹ    p1.js            |  22.26 |    18.18 |   10.00 | 23-24 26-27 29-46 67-90 92-94 96-99 101-115 117-123 125-151 155-179 181-187 189-191 193-198 200-212 214-227 229-237 239-252 254-262 265-282
+ℹ ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ all files           |  55.51 |    76.35 |   65.31 | 
+ℹ ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ end of coverage report
+
+✖ failing tests:
+
+test at dist/tests/integration/adapter.test.js:12:1
+✖ P1-007 adapter executes full observed flow and rejects overlapping execution (14.55794ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/adapter.test.js:13:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 92,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/evidence.test.js:22:1
+✖ P1-006 independently observes tracked/deleted/untracked/ignored files, forbidden scope and symlink escape (5.019848ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at evidenceSetup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:14:15)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:23:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 93,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/evidence.test.js:37:1
+✖ P1-006 records host RED/GREEN, manifest/diff/log hashes and safe handoff; detects falsification/tampering (7.494383ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at evidenceSetup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:14:15)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:38:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 94,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/evidence.test.js:52:1
+✖ P1-006 missing tests and false success remain insufficient, protected test modifications detected (5.705923ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at evidenceSetup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:14:15)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:53:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 95,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/evidence.test.js:60:1
+✖ P1-006 handoff rejects symlinks, mismatched hash, secret patterns and unsupported data policy (4.577406ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at evidenceSetup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:14:15)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:61:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 96,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/evidence.test.js:74:1
+✖ P1-006 snapshots detect content changes, file addition/removal and symlink substitution (4.076773ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at evidenceSetup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:14:15)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/evidence.test.js:75:21)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 97,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/execution.test.js:11:1
+✖ P1-005 preventive isolation denies protected write/chmod/creation/removal and preserves sentinel (5.498277ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at fixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:10:29)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:12:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 98,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/execution.test.js:21:1
+✖ P1-005 RED assertion is legitimate, separate GREEN invocation preserves test bytes (4.563065ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at fixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:10:29)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:22:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 99,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/execution.test.js:34:1
+✖ P1-005 all ten synthetic behaviors run in exclusive fixtures; negative operations prevented (4.275528ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at fixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:10:29)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:36:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 100,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/execution.test.js:53:1
+✖ P1-005 process failure, ENOENT, bounded output and timeout/interruption reap process groups (59.467334ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1048576
+  
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/execution.test.js:60:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1048576,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at dist/tests/integration/gates.test.js:17:1
+✖ P1-007 TASK-READY rejects every false prerequisite, invalid policies and missing approval (4.953857ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at setup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/gates.test.js:16:30)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/gates.test.js:18:37)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 116,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/gates.test.js:26:1
+✖ P1-007 gates require observed evidence and current trusted review plus exact MERGE authorization (5.025913ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at setup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/gates.test.js:16:30)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/gates.test.js:27:25)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 117,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/recovery-guards.test.js:14:1
+✖ P1-008 recovery audit: stale transition lock is archived with owner proof before reconciliation (5.228573ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at setup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/recovery-guards.test.js:13:30)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/recovery-guards.test.js:15:25)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 118,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/integration/recovery-guards.test.js:25:1
+✖ P1-008 identity audit: fixture/execution and executor bindings must agree before readiness (5.456115ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at setup (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/recovery-guards.test.js:13:30)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/integration/recovery-guards.test.js:26:29)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 119,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #1 Contrato alterado após aprovação. (5.470729ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 120,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #2 Aprovação inexistente. (4.725671ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 121,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #3 Resultado falso do executor. (4.277022ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 122,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #4 Arquivo alterado fora do escopo. (3.792373ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 123,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #5 Falha parcial. (5.165392ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 124,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #6 Tentativa interrompida. (5.324158ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 125,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #7 Revisão obsoleta. (4.39126ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 126,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #8 Aprovação MERGE vinculada a outra tentativa. (4.236679ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 127,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #9 Tentativa de alterar registros protegidos. (6.672889ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 128,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #10 Contrato com schema inválido. (4.180385ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 129,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #11 Teste tautológico rejeitado antes da fase GREEN. (6.962722ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 130,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #12 Modificação de teste protegido rejeitada. (4.660676ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 131,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #13 Symlink escapando do workspace autorizado. (3.945706ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 132,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #14 Handoff com `workspace_context_id` divergente. (4.60015ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 133,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #15 Evidência contendo padrão de segredo. (5.750133ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 134,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/scenarios/p1.test.js:11:5
+✖ P1-008 #16 Fluxo positivo RED → GREEN com evidências válidas. (4.414056ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at runScenario (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/scenarios/p1.js:54:21)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/scenarios/p1.test.js:12:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 135,
+    stdout: '',
+    stderr: ''
+  }
+
+test at dist/tests/unit/attempts.test.js:73:1
+✖ P1-004 rollback verifies registration/base/path, archives partial state, restores only owned fixture (4.296415ms)
+  <ref *1> Error: spawnSync /usr/bin/git EPERM
+      at Object.spawnSync (node:internal/child_process:1191:20)
+      at spawnSync (node:child_process:929:24)
+      at execFileSync (node:child_process:972:15)
+      at git (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/host.js:48:12)
+      at createFixture (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/src/execution/fixtures.js:21:5)
+      at TestContext.<anonymous> (file:///home/luishenriqs/projects/ai-orchestration-lab/dist/tests/unit/attempts.test.js:75:21)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /usr/bin/git',
+    path: '/usr/bin/git',
+    spawnargs: [ '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotePath=false', 'init', '-q', '--initial-branch=main' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, '', '' ],
+    pid: 136,
+    stdout: '',
+    stderr: ''
+  }
