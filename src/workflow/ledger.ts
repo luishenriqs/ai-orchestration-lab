@@ -20,6 +20,7 @@ function verifyApprovalForExecution(contract:TaskContract,approval:ApprovalRecor
 export class WorkflowLedgerError extends Error {constructor(readonly code:string,message=code){super(message);this.name='WorkflowLedgerError';}}
 function readEvent(file:string):LedgerEvent {try{return JSON.parse(fs.readFileSync(file,'utf8')) as LedgerEvent;}catch{throw new WorkflowLedgerError('LEDGER_EVENT_INVALID');}}
 function freezeTree<T>(value:T):T {if(value&&typeof value==='object'){for(const child of Object.values(value as Record<string,unknown>))freezeTree(child);Object.freeze(value);}return value;}
+function compareDecimalCursor(a:string,b:string):number {const left=a.replace(/^0+(?=\d)/u,'');const right=b.replace(/^0+(?=\d)/u,'');return left.length===right.length?(left<right?-1:left>right?1:0):left.length-right.length;}
 export class WorkflowLedger {
   readonly root:string;
   private readonly validator=createP2Validator();
@@ -80,55 +81,69 @@ export class WorkflowLedger {
       if(error instanceof WorkflowLedgerError&&error.code==='AUTHORIZATION_EXPIRED')this.blockExpiredWorkflow(events);
       throw error;
     }
-    const limits=resolveEffectiveLimits(auth.record.limits);const now=this.nowIso();
-    try{assertRuntimeBudgets(measureWorkflowActiveMs(events,now),measureInvocationMs(this.invocationsFrom(events),now),limits);}
-    catch(error){if(error instanceof Error&&/DURATION_LIMIT_EXCEEDED/.test(error.message))this.blockWorkflow(events,'DURATION_LIMIT_EXCEEDED');throw error;}return auth;
+    const limits=resolveEffectiveLimits(auth.record.limits);const now=this.nowIso();const workflowMs=measureWorkflowActiveMs(events,now),invocationMs=measureInvocationMs(this.invocationsFrom(events),now);
+    if(invocationMs>=limits.invocation_ms)this.blockWorkflow(events,'INVOCATION_DURATION_LIMIT_EXCEEDED');else if(workflowMs>=limits.workflow_active_ms)this.blockWorkflow(events,'WORKFLOW_DURATION_LIMIT_EXCEEDED');
+    try{assertRuntimeBudgets(workflowMs,invocationMs,limits);}catch(error){throw error;}return auth;
   }
   private latestGate(events:readonly LedgerEvent[],gate:string):{readonly authorization_id:string;readonly proof:NonNullable<Parameters<typeof transitionWorkflow>[2]>['gateProof']}|null {
     const event=[...events].reverse().find(e=>e.event_type==='GATE_DECISION'&&(e.payload as {gate?:string}).gate===gate);if(!event)return null;
     const p=event.payload as {gate:string;authorization_id:string;proof:NonNullable<Parameters<typeof transitionWorkflow>[2]>['gateProof'];allowed:boolean};return p.allowed?p:null;
   }
+  private currentArtifact(events:readonly LedgerEvent[]):{readonly artifact_sha256:string;readonly diff_sha256:string;readonly fixture_id:string;readonly latest_authorship_sequence:number;readonly author_ids:readonly string[]}|null {
+    const authored=[...events].reverse().find(e=>e.event_type==='ARTIFACT_AUTHORED');if(!authored)return null;
+    const p=authored.payload as {artifact_sha256:string;diff_sha256:string;invocation_id:string;fixture_id:string};
+    const authorIds=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED').map(e=>e.payload as {artifact_sha256:string;diff_sha256:string;invocation_id:string;fixture_id:string}).filter(a=>a.artifact_sha256===p.artifact_sha256&&a.diff_sha256===p.diff_sha256&&a.fixture_id===p.fixture_id).map(a=>a.invocation_id);
+    return Object.freeze({artifact_sha256:p.artifact_sha256,diff_sha256:p.diff_sha256,fixture_id:p.fixture_id,latest_authorship_sequence:authored.sequence,author_ids:Object.freeze([...new Set(authorIds)])});
+  }
+  private reviewOriginPhase(events:readonly LedgerEvent[]):WorkflowRecord['phase']|null {
+    const transitions=events.filter(e=>e.event_type==='WORKFLOW_TRANSITION').map(e=>({event:e.payload as {event:string;next_phase?:WorkflowRecord['phase']},sequence:e.sequence}));
+    const last=transitions.filter(x=>x.event.event==='ADVANCE_PHASE'&&x.event.next_phase==='REVIEWING').at(-1);if(!last)return null;
+    const prior=[...transitions].reverse().find(x=>x.sequence<last.sequence);return prior?.event.next_phase??(events[0]!.payload as WorkflowRecord).phase;
+  }
+  private currentReview(events:readonly LedgerEvent[],artifact:NonNullable<ReturnType<WorkflowLedger['currentArtifact']>>):LedgerEvent|null {
+    return [...events].reverse().find(e=>e.event_type==='ARTIFACT_REVIEWED'&&e.sequence>artifact.latest_authorship_sequence&&(()=>{const p=e.payload as {artifact_sha256:string;diff_sha256:string;fixture_id:string};return p.artifact_sha256===artifact.artifact_sha256&&p.diff_sha256===artifact.diff_sha256&&p.fixture_id===artifact.fixture_id;})())??null;
+  }
+  private reviewIndependent(events:readonly LedgerEvent[],artifact:NonNullable<ReturnType<WorkflowLedger['currentArtifact']>>,review:LedgerEvent):boolean {
+    const p=review.payload as {invocation_id:string;outcome:'APPROVED'|'CHANGES_REQUESTED';identity_sha256:string};const invocations=this.invocationsFrom(events);const reviewer=invocations.find(i=>i.invocation_id===p.invocation_id);
+    if(p.outcome!=='APPROVED'||!reviewer||reviewer.role!=='REVIEWER'||reviewer.state!=='SUCCEEDED'||p.identity_sha256!==canonicalHash(reviewer.identity)||artifact.author_ids.length===0||artifact.author_ids.includes(p.invocation_id))return false;
+    return artifact.author_ids.every(id=>{const author=invocations.find(i=>i.invocation_id===id);return !!author&&author.state==='SUCCEEDED'&&evaluateIndependentReview(author.identity,reviewer.identity,{reviewerInvocationId:p.invocation_id,artifactAuthorInvocationIds:artifact.author_ids}).allowed;});
+  }
+  private currentValidation(events:readonly LedgerEvent[],artifact:NonNullable<ReturnType<WorkflowLedger['currentArtifact']>>,reviewEvent:LedgerEvent|null):LedgerEvent|null {
+    if(!reviewEvent)return null;
+    return [...events].reverse().find(e=>e.event_type==='HOST_EVIDENCE'&&e.sequence>reviewEvent.sequence&&(()=>{const p=e.payload as {kind:string;artifact_sha256?:string;diff_sha256?:string;fixture_id:string};return p.kind==='VALIDATION'&&p.artifact_sha256===artifact.artifact_sha256&&p.diff_sha256===artifact.diff_sha256&&p.fixture_id===artifact.fixture_id;})())??null;
+  }
   private gateBasis(events:readonly LedgerEvent[],gate:'REVIEW-GATE'|'ValidationGate'):string {
-    const invocations=this.invocationsFrom(events);
-    const authored=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED').map(e=>e.payload as {artifact_sha256:string;diff_sha256:string;invocation_id:string;fixture_id:string});
-    if(gate==='REVIEW-GATE'){
-      const reviews=events.filter(e=>e.event_type==='ARTIFACT_REVIEWED').map(e=>e.payload as {artifact_sha256:string;review_sha256:string;invocation_id:string;fixture_id:string;identity_sha256:string});
-      return canonicalHash({authored:authored.filter(a=>a.fixture_id===this.options.fixture_id).map(a=>({artifact_sha256:a.artifact_sha256,diff_sha256:a.diff_sha256,invocation_id:a.invocation_id})),reviews:reviews.filter(r=>r.fixture_id===this.options.fixture_id).map(r=>({artifact_sha256:r.artifact_sha256,review_sha256:r.review_sha256,invocation_id:r.invocation_id,identity_sha256:r.identity_sha256})),identities:invocations.map(i=>({id:i.invocation_id,state:i.state,identity:i.identity,role:i.role}))});
-    }
-    const validation=events.filter(e=>e.event_type==='HOST_EVIDENCE'&&(e.payload as {kind?:string}).kind==='VALIDATION').map(e=>e.payload as {evidence_sha256:string;invocation_id:string;fixture_id:string});
-    return canonicalHash({authored:authored.map(a=>({artifact_sha256:a.artifact_sha256,diff_sha256:a.diff_sha256,invocation_id:a.invocation_id})),validation:validation.filter(v=>v.fixture_id===this.options.fixture_id).map(v=>({evidence_sha256:v.evidence_sha256,invocation_id:v.invocation_id})),identities:invocations.map(i=>({id:i.invocation_id,state:i.state,role:i.role}))});
+    const artifact=this.currentArtifact(events);if(!artifact)return canonicalHash({artifact:null,review:null,validation:null});
+    const review=this.currentReview(events,artifact);const validation=this.currentValidation(events,artifact,review);
+    return canonicalHash({gate,artifact,review:review?.payload??null,validation:gate==='ValidationGate'?validation?.payload??null:null});
   }
   private gateEvidence(events:readonly LedgerEvent[],gate:'REVIEW-GATE'|'ValidationGate',fixtureId:string):string[] {
-    const invocations=this.invocationsFrom(events),authored=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED').map(e=>e.payload as {artifact_sha256:string;invocation_id:string;fixture_id:string});
-    if(gate==='REVIEW-GATE'){
-      const reviewed=events.filter(e=>e.event_type==='ARTIFACT_REVIEWED').map(e=>e.payload as {artifact_sha256:string;invocation_id:string;fixture_id:string});
-      return [...new Set(authored.filter(a=>a.fixture_id===fixtureId).filter(a=>{const author=invocations.find(i=>i.invocation_id===a.invocation_id);return !!author&&author.state==='SUCCEEDED'&&reviewed.some(r=>{const reviewer=invocations.find(i=>i.invocation_id===r.invocation_id);return r.fixture_id===fixtureId&&r.artifact_sha256===a.artifact_sha256&&r.invocation_id!==a.invocation_id&&!!reviewer&&reviewer.state==='SUCCEEDED'&&evaluateIndependentReview(author.identity,reviewer.identity,{reviewerInvocationId:reviewer.invocation_id,artifactAuthorInvocationIds:[author.invocation_id]}).allowed;});}).map(a=>a.artifact_sha256))].sort();
-    }
-    const validation=events.filter(e=>e.event_type==='HOST_EVIDENCE'&&(e.payload as {kind?:string;fixture_id?:string}).kind==='VALIDATION'&&(e.payload as {fixture_id?:string}).fixture_id===fixtureId).map(e=>e.payload as {evidence_sha256:string;invocation_id:string;artifact_sha256?:string});
-    return [...new Set(authored.filter(a=>a.fixture_id===fixtureId).filter(a=>invocations.find(i=>i.invocation_id===a.invocation_id)?.state==='SUCCEEDED').flatMap(a=>validation.filter(v=>v.artifact_sha256===a.artifact_sha256&&(()=>{const validator=invocations.find(i=>i.invocation_id===v.invocation_id);return !!validator&&validator.state==='SUCCEEDED'&&['VALIDATOR','IMPLEMENTER'].includes(validator.role);})()).map(v=>v.evidence_sha256)))].sort();
+    const artifact=this.currentArtifact(events);if(!artifact||artifact.fixture_id!==fixtureId)return [];
+    const review=this.currentReview(events,artifact);if(!review||!this.reviewIndependent(events,artifact,review))return [];
+    if(gate==='REVIEW-GATE')return [canonicalHash({artifact_sha256:artifact.artifact_sha256,diff_sha256:artifact.diff_sha256,authorship_sequence:artifact.latest_authorship_sequence,author_ids:artifact.author_ids,review_sequence:review.sequence,review_sha256:(review.payload as {review_sha256:string}).review_sha256})];
+    const validation=this.currentValidation(events,artifact,review);if(!validation)return [];
+    const p=validation.payload as {result:'PASS'|'FAIL';invocation_id:string;evidence_sha256:string};const validator=this.invocationsFrom(events).find(i=>i.invocation_id===p.invocation_id);
+    if(p.result!=='PASS'||!validator||validator.state!=='SUCCEEDED'||!['VALIDATOR','IMPLEMENTER'].includes(validator.role))return [];
+    return [canonicalHash({artifact_sha256:artifact.artifact_sha256,diff_sha256:artifact.diff_sha256,review_sha256:(review.payload as {review_sha256:string}).review_sha256,validation_sha256:p.evidence_sha256,validation_invocation_id:validator.invocation_id})];
   }
   private gateIsCurrent(events:readonly LedgerEvent[],gate:NonNullable<ReturnType<WorkflowLedger['latestGate']>>,workflow:WorkflowRecord,name:string):boolean {
     const record=[...events].reverse().find(e=>e.event_type==='GATE_DECISION'&&(e.payload as {gate?:string}).gate===name);if(!record)return false;
-    const p=record.payload as {phase?:string;revision_cycles?:number;correction_cycles?:number;basis_sha256?:string;authorization_id:string};
-    return p.authorization_id===workflow.authorization_id&&p.phase===workflow.phase&&p.revision_cycles===workflow.revision_cycles&&p.correction_cycles===workflow.correction_cycles&&p.basis_sha256===this.gateBasis(events,name as 'REVIEW-GATE'|'ValidationGate')&&!!gate.proof;
+    const p=record.payload as {phase?:string;revision_cycles?:number;correction_cycles?:number;basis_sha256?:string;evidence_sha256?:string;fixture_id?:string;authorization_id:string};
+    const fixture=p.fixture_id??'';
+    return p.authorization_id===workflow.authorization_id&&p.phase===workflow.phase&&p.revision_cycles===workflow.revision_cycles&&p.correction_cycles===workflow.correction_cycles&&p.basis_sha256===this.gateBasis(events,name as 'REVIEW-GATE'|'ValidationGate')&&p.evidence_sha256===canonicalHash(this.gateEvidence(events,name as 'REVIEW-GATE'|'ValidationGate',fixture))&&!!gate.proof;
   }
   private hasCurrentSuccessfulEvidence(events:readonly LedgerEvent[]):boolean {
-    const authors=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED').map(e=>({event:e,p:e.payload as {artifact_sha256:string;diff_sha256:string;invocation_id:string;fixture_id:string}})).filter(x=>x.p.fixture_id===this.options.fixture_id);
-    const reviews=events.filter(e=>e.event_type==='ARTIFACT_REVIEWED').map(e=>e.payload as {artifact_sha256:string;review_sha256:string;invocation_id:string;fixture_id:string}).filter(x=>x.fixture_id===this.options.fixture_id);
-    const validation=events.filter(e=>e.event_type==='HOST_EVIDENCE').map(e=>e.payload as {kind:string;invocation_id:string;fixture_id:string}).filter(x=>x.kind==='VALIDATION'&&x.fixture_id===this.options.fixture_id);
-    const invocations=this.invocationsFrom(events);
-    return authors.some(a=>{
-      const author=invocations.find(i=>i.invocation_id===a.p.invocation_id);
-      const review=[...reviews].reverse().find(r=>r.artifact_sha256===a.p.artifact_sha256&&r.invocation_id!==a.p.invocation_id);
-      const reviewer=review&&invocations.find(i=>i.invocation_id===review.invocation_id);
-      const validated=validation.some(v=>{const i=invocations.find(x=>x.invocation_id===v.invocation_id);return !!i&&i.state==='SUCCEEDED'&&['VALIDATOR','IMPLEMENTER'].includes(i.role);});
-      return !!author&&author.state==='SUCCEEDED'&&!!reviewer&&reviewer.state==='SUCCEEDED'&&validated&&evaluateIndependentReview(author.identity,reviewer.identity,{reviewerInvocationId:reviewer.invocation_id,artifactAuthorInvocationIds:[author.invocation_id]}).allowed;
-    });
+    const artifact=this.currentArtifact(events);if(!artifact||artifact.fixture_id!==this.options.fixture_id)return false;
+    const invocations=this.invocationsFrom(events);if(!artifact.author_ids.some(id=>invocations.find(i=>i.invocation_id===id)?.role==='IMPLEMENTER'))return false;
+    const review=this.currentReview(events,artifact);if(!review||!this.reviewIndependent(events,artifact,review))return false;
+    const validation=this.currentValidation(events,artifact,review);if(!validation)return false;
+    const p=validation.payload as {result:'PASS'|'FAIL';invocation_id:string};const validator=invocations.find(i=>i.invocation_id===p.invocation_id);
+    return p.result==='PASS'&&!!validator&&validator.state==='SUCCEEDED'&&['VALIDATOR','IMPLEMENTER'].includes(validator.role);
   }
-  private cancelActiveInvocation(events:readonly LedgerEvent[],workflowId:string,last:LedgerEvent):void {
+  private cancelActiveInvocation(events:readonly LedgerEvent[],workflowId:string,last:LedgerEvent,reason?:string):void {
     let seq=last.sequence+1,hash=last.event_hash;
     for(const invocation of this.invocationsFrom(events).filter(i=>['CREATED','STARTING','RUNNING'].includes(i.state))){
-      const context={observedAt:this.nowIso()};const record=transitionInvocation(invocation,'CANCEL',context);
+      const context={observedAt:this.nowIso(),duration_limit_exceeded:reason==='INVOCATION_DURATION_LIMIT_EXCEEDED'};const record=transitionInvocation(invocation,'CANCEL',context);
       const event=this.writeEvent(workflowId,seq++,'INVOCATION_TRANSITION',{invocation_id:invocation.invocation_id,event:'CANCEL',context,record},hash);hash=event.event_hash;
     }
   }
@@ -179,18 +194,26 @@ export class WorkflowLedger {
     if(event==='APPROVE')throw new WorkflowLedgerError('USE_FINAL_APPROVAL_API');
     return this.withLock(id,events=>{
       const prior=this.projectEvents(events);let effective={...context};
-      if(['START','ADVANCE_PHASE','REQUEST_FINAL_APPROVAL'].includes(event)){
+      if(['START','ADVANCE_PHASE','RETURN_FOR_CORRECTION','REQUEST_FINAL_APPROVAL'].includes(event)){
         if(event==='START')try{this.assertCurrentAuthorization(events);}catch(error){if(error instanceof WorkflowLedgerError&&error.code==='AUTHORIZATION_EXPIRED')this.blockExpiredWorkflow(events);throw error;}
         else this.assertProgress(events);
       }
       if(event==='RESUME')this.assertCurrentAuthorization(events);
-      if(['AUTHORIZE','RESUME','START','ADVANCE_PHASE','REQUEST_FINAL_APPROVAL'].includes(event)){
+      if(['AUTHORIZE','RESUME','START','ADVANCE_PHASE','RETURN_FOR_CORRECTION','REQUEST_FINAL_APPROVAL'].includes(event)){
         const auth=event==='AUTHORIZE'?this.latestAvailableAuthorization(events):this.assertCurrentAuthorization(events);const proof=auth.proof;
         effective={...effective,authorizationProof:proof,authorizationValid:true,authorizationId:auth.record.authorization_id};
       }
-      const nextPhase=event==='ADVANCE_PHASE'?context.nextPhase:null;
-      const requiredGate=event==='START'?'TASK-READY':event==='ADVANCE_PHASE'&&prior.phase==='REVIEWING'&&nextPhase==='EXECUTING'?'REVIEW-GATE':(event==='ADVANCE_PHASE'&&prior.phase==='VALIDATING'&&nextPhase==='EXECUTING'||event==='REQUEST_FINAL_APPROVAL')?'ValidationGate':null;
+      const nextPhase=event==='ADVANCE_PHASE'||event==='RETURN_FOR_CORRECTION'?context.nextPhase:null;
+      const reviewOrigin=this.reviewOriginPhase(events);
+      const requiredGate=event==='START'?'TASK-READY':event==='ADVANCE_PHASE'&&prior.phase==='REVIEWING'&&['EXECUTING','VALIDATING'].includes(nextPhase??'')?'REVIEW-GATE':event==='REQUEST_FINAL_APPROVAL'?'ValidationGate':null;
       if(requiredGate){const gate=this.latestGate(events,requiredGate);if(!gate?.proof||gate.authorization_id!==this.assertCurrentAuthorization(events).record.authorization_id||(requiredGate!=='TASK-READY'&&!this.gateIsCurrent(events,gate,prior,requiredGate)))throw new WorkflowLedgerError('HOST_GATE_REQUIRED:'+requiredGate);effective={...effective,gatesReady:true,phaseGatePassed:true,gateProof:gate.proof};}
+      if(event==='ADVANCE_PHASE'&&prior.phase==='REVIEWING'&&((reviewOrigin==='PLANNING'&&nextPhase!=='EXECUTING')||(reviewOrigin==='EXECUTING'&&nextPhase!=='VALIDATING')||!['PLANNING','EXECUTING'].includes(reviewOrigin??'')))throw new WorkflowLedgerError('REVIEW_PHASE_ORIGIN_INVALID');
+      if(event==='RETURN_FOR_CORRECTION'){
+        const artifact=this.currentArtifact(events);const review=artifact&&this.currentReview(events,artifact);const validation=artifact&&review&&this.currentValidation(events,artifact,review);
+        const validReviewReturn=prior.phase==='REVIEWING'&&reviewOrigin!==null&&nextPhase===reviewOrigin&&!!review&&review.sequence===events.filter(e=>e.event_type==='ARTIFACT_REVIEWED').at(-1)?.sequence&&(review.payload as {outcome:string}).outcome==='CHANGES_REQUESTED';
+        const validValidationReturn=prior.phase==='VALIDATING'&&nextPhase==='EXECUTING'&&!!validation&&(validation.payload as {result:string}).result==='FAIL';
+        if(!validReviewReturn&&!validValidationReturn)throw new WorkflowLedgerError('CORRECTION_NOT_REQUESTED_BY_GATE');
+      }
       if(event==='REQUEST_FINAL_APPROVAL'||event==='CONFIRM_CANCEL'){
         const invocations=this.invocationsFrom(events);const pending=invocations.some(i=>!this.invocationSettled(events,i));
         if(event==='REQUEST_FINAL_APPROVAL'&&!this.hasCurrentSuccessfulEvidence(events))throw Error('CURRENT_SUCCESSFUL_EVIDENCE_REQUIRED');
@@ -215,7 +238,7 @@ export class WorkflowLedger {
         effective={...effective,reconciled:true};
       }
       const next=transitionWorkflow(prior,event,effective);let last=events.at(-1)!;
-      if(event==='ADVANCE_PHASE'){
+      if(event==='ADVANCE_PHASE'||event==='RETURN_FOR_CORRECTION'){
         const auth=this.latestAuthorization(events,effective.authorizationProof?.authorization_id??'');if(!auth)throw Error('AUTHORIZATION_NOT_CURRENT');
         const limits=resolveEffectiveLimits(auth.record.limits);
         if(next.revision_cycles>limits.review_cycles||next.correction_cycles>limits.correction_cycles)throw Error('CYCLE_LIMIT_EXCEEDED');
@@ -224,7 +247,7 @@ export class WorkflowLedger {
       if(event==='FAIL'&&(this.invocationsFrom(events).some(i=>!this.invocationSettled(events,i))||this.effectsFrom(events).some(e=>['INTENT_RECORDED','DISPATCHED','OBSERVED','UNKNOWN','RECONCILIATION_REQUIRED'].includes(e.state)))){persistedEvent='FAIL_PENDING';effective={...effective,reason:'FAILURE_RECONCILIATION_REQUIRED'};}
       const persistedNext=persistedEvent===event?next:transitionWorkflow(prior,persistedEvent,effective);
       const transition=this.writeEvent(id,last.sequence+1,'WORKFLOW_TRANSITION',{event:persistedEvent,context:effective,next_state:persistedNext.state,next_phase:persistedNext.phase,authorization_id:persistedNext.authorization_id},last.event_hash);last=transition;
-      if(['BLOCK','CANCEL','FAIL_PENDING','REVOKE'].includes(event)||persistedEvent==='FAIL_PENDING')this.cancelActiveInvocation([...events,transition], id, last);
+      if(['BLOCK','CANCEL','FAIL_PENDING','REVOKE'].includes(event)||persistedEvent==='FAIL_PENDING')this.cancelActiveInvocation([...events,transition], id, last,context.reason);
       return transition;
     });
   }
@@ -379,30 +402,30 @@ export class WorkflowLedger {
       return this.writeEvent(workflowId,last.sequence+1,'INVOCATION_TRANSITION',{invocation_id:invocationId,event,context:effectiveContext,record:next},last.event_hash);
     });
   }
-  recordArtifactAuthorship(workflowId:string,artifactHash:string,invocationId:string,artifactPath:string,fixtureId:string):LedgerEvent {
+  recordArtifactAuthorship(workflowId:string,artifactHash:string,invocationId:string,artifactPath:string,fixtureId:string,diffSha256=artifactHash):LedgerEvent {
     return this.withLock(workflowId,events=>{
       if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
-      const auth=this.assertProgress(events);if(!/^[a-f0-9]{64}$/.test(artifactHash))throw Error('INVALID_ARTIFACT_HASH');
+      const auth=this.assertProgress(events);if(!/^[a-f0-9]{64}$/.test(artifactHash)||!/^[a-f0-9]{64}$/.test(diffSha256))throw Error('INVALID_ARTIFACT_HASH');
       const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.role!=='IMPLEMENTER'||invocation.identity.status!=='VERIFIED')throw Error('ARTIFACT_AUTHOR_NOT_VALIDATED');
       const check=checkAuthorization(auth.record,{workflow_id:workflowId,contract_sha256:auth.record.contract_sha256,repository:auth.record.repository,baseline_git:auth.record.baseline_git,worktree:auth.record.worktree},this.nowIso(),'WRITE',invocation.identity,artifactPath,auth.contract.scope.forbidden_changes);if(!check.allowed)throw new WorkflowLedgerError('ARTIFACT_PATH_UNAUTHORIZED:'+check.reasons.join(','));
-      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'ARTIFACT_AUTHORED',{artifact_sha256:artifactHash,diff_sha256:artifactHash,artifact_path:artifactPath,invocation_id:invocationId,fixture_id:fixtureId},last.event_hash);
+      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'ARTIFACT_AUTHORED',{artifact_sha256:artifactHash,diff_sha256:diffSha256,artifact_path:artifactPath,invocation_id:invocationId,fixture_id:fixtureId},last.event_hash);
     });
   }
-  recordArtifactReview(workflowId:string,artifactHash:string,invocationId:string,fixtureId:string,reviewSha256=artifactHash):LedgerEvent {
+  recordArtifactReview(workflowId:string,artifactHash:string,invocationId:string,fixtureId:string,reviewSha256=artifactHash,outcome:'APPROVED'|'CHANGES_REQUESTED'='APPROVED'):LedgerEvent {
     return this.withLock(workflowId,events=>{
       if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
       this.assertProgress(events);
       if(!/^[a-f0-9]{64}$/.test(artifactHash)||!/^[a-f0-9]{64}$/.test(reviewSha256))throw Error('INVALID_ARTIFACT_HASH');
       const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.role!=='REVIEWER'||invocation.identity.status!=='VERIFIED')throw Error('REVIEWER_NOT_VALIDATED');
-      const authors=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED'&&(e.payload as {artifact_sha256:string}).artifact_sha256===artifactHash).map(e=>(e.payload as {invocation_id:string}).invocation_id);
-      if(!authors.length||authors.includes(invocationId))throw new WorkflowLedgerError('REVIEW_NOT_INDEPENDENT');
+      const artifact=this.currentArtifact(events);if(!artifact||artifact.artifact_sha256!==artifactHash||artifact.fixture_id!==fixtureId)throw new WorkflowLedgerError('ARTIFACT_NOT_CURRENT');
+      const authors=[...artifact.author_ids];if(!authors.length||authors.includes(invocationId))throw new WorkflowLedgerError('REVIEW_NOT_INDEPENDENT');
       for(const id of authors){const author=this.invocationsFrom(events).find(i=>i.invocation_id===id);if(!author||!evaluateIndependentReview(author.identity,invocation.identity,{reviewerInvocationId:invocationId,artifactAuthorInvocationIds:authors}).allowed)throw new WorkflowLedgerError('REVIEW_NOT_INDEPENDENT');}
-      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'ARTIFACT_REVIEWED',{artifact_sha256:artifactHash,review_sha256:reviewSha256,invocation_id:invocationId,fixture_id:fixtureId,identity_sha256:canonicalHash(invocation.identity)},last.event_hash);
+      const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'ARTIFACT_REVIEWED',{artifact_sha256:artifact.artifact_sha256,diff_sha256:artifact.diff_sha256,review_sha256:reviewSha256,invocation_id:invocationId,fixture_id:fixtureId,identity_sha256:canonicalHash(invocation.identity),outcome},last.event_hash);
     });
   }
-  recordFixtureEvidence(workflowId:string,kind:'VALIDATION'|'FINAL',invocationId:string,evidenceSha256:string,fixtureId:string):LedgerEvent {
+  recordFixtureEvidence(workflowId:string,kind:'VALIDATION'|'FINAL',invocationId:string,evidenceSha256:string,fixtureId:string,result:'PASS'|'FAIL'='PASS'):LedgerEvent {
     if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
-    return this.withLock(workflowId,events=>{this.assertProgress(events);if(!/^[a-f0-9]{64}$/.test(evidenceSha256))throw new WorkflowLedgerError('INVALID_EVIDENCE_HASH');const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.identity.status!=='VERIFIED')throw new WorkflowLedgerError('EVIDENCE_INVOCATION_UNVERIFIED');if(kind==='VALIDATION'&&!['VALIDATOR','IMPLEMENTER'].includes(invocation.role))throw new WorkflowLedgerError('VALIDATION_ROLE_REQUIRED');const artifact=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED').at(-1)?.payload as {artifact_sha256?:string}|undefined;if(!artifact?.artifact_sha256)throw new WorkflowLedgerError('EVIDENCE_ARTIFACT_REQUIRED');const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'HOST_EVIDENCE',{kind,workflow_id:workflowId,invocation_id:invocationId,evidence_sha256:evidenceSha256,artifact_sha256:artifact.artifact_sha256,fixture_id:fixtureId},last.event_hash);});
+    return this.withLock(workflowId,events=>{this.assertProgress(events);if(!/^[a-f0-9]{64}$/.test(evidenceSha256)||!['PASS','FAIL'].includes(result))throw new WorkflowLedgerError('INVALID_EVIDENCE_HASH');const invocation=this.invocationsFrom(events).find(i=>i.invocation_id===invocationId);if(!invocation||invocation.state!=='SUCCEEDED'||invocation.identity.status!=='VERIFIED')throw new WorkflowLedgerError('EVIDENCE_INVOCATION_UNVERIFIED');if(kind==='VALIDATION'&&!['VALIDATOR','IMPLEMENTER'].includes(invocation.role))throw new WorkflowLedgerError('VALIDATION_ROLE_REQUIRED');if(kind==='FINAL'&&result!=='PASS')throw new WorkflowLedgerError('FINAL_EVIDENCE_MUST_PASS');const artifact=this.currentArtifact(events);if(!artifact||artifact.fixture_id!==fixtureId)throw new WorkflowLedgerError('EVIDENCE_ARTIFACT_REQUIRED');const review=this.currentReview(events,artifact);if(!review||!this.reviewIndependent(events,artifact,review))throw new WorkflowLedgerError('CURRENT_REVIEW_REQUIRED');const validation=kind==='FINAL'?this.currentValidation(events,artifact,review):null;if(kind==='FINAL'&&(!validation||(validation.payload as {result:string}).result!=='PASS'))throw new WorkflowLedgerError('CURRENT_VALIDATION_REQUIRED');const last=events.at(-1)!;return this.writeEvent(workflowId,last.sequence+1,'HOST_EVIDENCE',{kind,workflow_id:workflowId,invocation_id:invocationId,evidence_sha256:evidenceSha256,artifact_sha256:artifact.artifact_sha256,diff_sha256:artifact.diff_sha256,review_sha256:(review.payload as {review_sha256:string}).review_sha256,...(validation?{validation_sha256:(validation.payload as {evidence_sha256:string}).evidence_sha256}:{}),result,fixture_id:fixtureId},last.event_hash);});
   }
   evaluateGate(workflowId:string,gate:'REVIEW-GATE'|'ValidationGate',fixtureId:string):LedgerEvent {
     if(!this.options.fixture_id||fixtureId!==this.options.fixture_id)throw new WorkflowLedgerError('FIXTURE_AUTHORITY_REQUIRED');
@@ -418,10 +441,11 @@ export class WorkflowLedger {
     return this.withLock(workflowId,events=>{
       const workflow=this.projectEvents(events);if(workflow.state!=='AWAITING_APPROVAL')throw new WorkflowLedgerError('FINAL_APPROVAL_STATE_INVALID');
       let auth:NonNullable<ReturnType<WorkflowLedger['currentAuthorization']>>;try{auth=this.assertCurrentAuthorization(events);}catch(error){if(error instanceof WorkflowLedgerError&&error.code==='AUTHORIZATION_EXPIRED')this.blockExpiredWorkflow(events);throw error;}const trusted=this.options.trusted_approvals??[];
-      const authored=events.find(e=>e.event_type==='ARTIFACT_AUTHORED'&&(e.payload as {diff_sha256?:string}).diff_sha256===diffSha256);const authoredPayload=authored?.payload as {artifact_sha256?:string;invocation_id?:string}|undefined;
-      const reviewed=events.find(e=>e.event_type==='ARTIFACT_REVIEWED'&&(e.payload as {artifact_sha256?:string;review_sha256?:string}).artifact_sha256===authoredPayload?.artifact_sha256&&(e.payload as {review_sha256?:string}).review_sha256===reviewSha256);
-      const evidence=events.find(e=>e.event_type==='HOST_EVIDENCE'&&(e.payload as {kind?:string;evidence_sha256?:string;artifact_sha256?:string}).kind==='FINAL'&&(e.payload as {evidence_sha256?:string}).evidence_sha256===evidenceSha256&&(e.payload as {artifact_sha256?:string}).artifact_sha256===authoredPayload?.artifact_sha256);
-      if(!authoredPayload||!reviewed||!evidence)throw new WorkflowLedgerError('FINAL_EVIDENCE_NOT_REGISTERED');
+      const artifact=this.currentArtifact(events);const reviewed=artifact&&this.currentReview(events,artifact);const validation=artifact&&reviewed&&this.currentValidation(events,artifact,reviewed);
+      const evidenceEvent=[...events].reverse().find(e=>e.event_type==='HOST_EVIDENCE'&&(()=>{const p=e.payload as {kind:string;evidence_sha256:string;artifact_sha256?:string;diff_sha256?:string;review_sha256?:string;validation_sha256?:string;result?:string};return p.kind==='FINAL'&&p.evidence_sha256===evidenceSha256&&p.artifact_sha256===artifact?.artifact_sha256&&p.diff_sha256===artifact?.diff_sha256&&p.review_sha256===(reviewed?.payload as {review_sha256:string}|undefined)?.review_sha256&&p.validation_sha256===(validation?.payload as {evidence_sha256:string}|undefined)?.evidence_sha256&&p.result==='PASS';})());
+      if(!artifact||artifact.fixture_id!==(fixtureId??this.options.fixture_id)||artifact.diff_sha256!==diffSha256||!reviewed||!this.reviewIndependent(events,artifact,reviewed)||(reviewed.payload as {review_sha256:string}).review_sha256!==reviewSha256||!validation||(validation.payload as {result:string}).result!=='PASS'||!evidenceEvent||!this.hasCurrentSuccessfulEvidence(events))throw new WorkflowLedgerError('FINAL_EVIDENCE_NOT_REGISTERED');
+      const authorInvocation=this.invocationsFrom(events).find(i=>artifact.author_ids.includes(i.invocation_id)&&i.role==='IMPLEMENTER'&&i.state==='SUCCEEDED');if(!authorInvocation)throw new WorkflowLedgerError('CURRENT_IMPLEMENTATION_REQUIRED');
+      const finalPayload=evidenceEvent.payload as {invocation_id:string};const finalInvocation=this.invocationsFrom(events).find(i=>i.invocation_id===finalPayload.invocation_id);if(!finalInvocation||finalInvocation.state!=='SUCCEEDED'||finalInvocation.identity.status!=='VERIFIED')throw new WorkflowLedgerError('FINAL_EVIDENCE_NOT_REGISTERED');
       const p1=this.options.p1_pr_gate_verifier?.({workflow_id:workflowId,contract_sha256:auth.record.contract_sha256,attempt_id:attemptId,diff_sha256:diffSha256,review_sha256:reviewSha256,evidence_sha256:evidenceSha256,review_id:reviewId});
       if(!p1||!p1.allowed||p1.gate!=='PR-GATE'||p1.execution_id!==workflowId||p1.attempt_id!==attemptId||p1.contract_sha256!==auth.record.contract_sha256)throw new WorkflowLedgerError('P1_PR_GATE_REQUIRED');
       const merge=verifyApproval(auth.contract,approval,{scope:'MERGE',trusted,attempt_id:attemptId,diff_sha256:diffSha256,review_id:reviewId});if(!merge.allowed)throw new WorkflowLedgerError('FINAL_APPROVAL_REJECTED:'+merge.reasons.join(','));
@@ -461,7 +485,7 @@ export class WorkflowLedger {
       const existing=events.filter(e=>e.event_type==='AGENT_MESSAGE').map(e=>e.payload as NormalizedAgentMessage).find(m=>m.invocation_id===input.invocation_id&&(m.source_event_id!==null?'event:'+m.source_event_id:m.source_cursor!==null?'cursor:'+m.source_cursor:null)===identity);
       const payloadHash=canonicalHash(input.payload);
       if(existing){if(existing.payload_sha256!==payloadHash||existing.message_type!==input.message_type||existing.reply_to_message_id!==input.reply_to_message_id||existing.source_cursor!==input.source_cursor)throw Error('SOURCE_EVENT_CONFLICT');return Object.freeze({message:existing,duplicate:true});}
-      if(input.source_cursor!==null){const cursors=events.filter(e=>e.event_type==='AGENT_MESSAGE'&&(e.payload as NormalizedAgentMessage).invocation_id===input.invocation_id).map(e=>Number((e.payload as NormalizedAgentMessage).source_cursor)).filter(Number.isSafeInteger);if(cursors.length&&Number(input.source_cursor)<=Math.max(...cursors))throw new WorkflowLedgerError('SOURCE_CURSOR_REWIND');}
+      if(input.source_cursor!==null){const cursors=events.filter(e=>e.event_type==='AGENT_MESSAGE'&&(e.payload as NormalizedAgentMessage).invocation_id===input.invocation_id).map(e=>(e.payload as NormalizedAgentMessage).source_cursor).filter((cursor):cursor is string=>cursor!==null);if(cursors.some(cursor=>compareDecimalCursor(input.source_cursor!,cursor)<=0))throw new WorkflowLedgerError('SOURCE_CURSOR_REWIND');}
       if(input.reply_to_message_id!==null&&!events.some(e=>e.event_type==='AGENT_MESSAGE'&&(e.payload as NormalizedAgentMessage).message_id===input.reply_to_message_id))throw Error('REPLY_TARGET_UNKNOWN');
       const last=events.at(-1)!;const sequence=last.sequence+1;
       const message=normalizeAgentMessage(input,{sequence,previous_event_hash:last.event_hash,observed_at:this.nowIso(),correlation_id:'corr-'+workflowIdSafe(input.workflow_id)});
@@ -489,9 +513,10 @@ export class WorkflowLedger {
     const records=new Map<string,EffectRecord>();for(const e of events){if(e.event_type==='EFFECT_INTENT'){const x=e.payload as EffectRecord;records.set(x.effect_id,x);}else if(e.event_type==='EFFECT_TRANSITION'){const x=e.payload as {effect_id:string;record:EffectRecord};records.set(x.effect_id,x.record);}}return [...records.values()];
   }
   assertBudgets(workflowId:string):{readonly workflow_active_ms:number;readonly longest_invocation_ms:number} {
-    return this.withLock(workflowId,events=>{const authorization=this.assertProgress(events),now=this.nowIso();
+    return this.withLock(workflowId,events=>{const authorization=this.assertCurrentAuthorization(events),now=this.nowIso();
       const limits=resolveEffectiveLimits(authorization.record.limits),workflowMs=measureWorkflowActiveMs(events,now),invocationMs=measureInvocationMs(this.invocationsFrom(events),now);
-      try{assertRuntimeBudgets(workflowMs,invocationMs,limits);}catch(error){if(error instanceof Error&&/DURATION_LIMIT_EXCEEDED/.test(error.message))this.blockWorkflow(events,'DURATION_LIMIT_EXCEEDED');throw error;}return Object.freeze({workflow_active_ms:workflowMs,longest_invocation_ms:invocationMs});});
+      if(invocationMs>=limits.invocation_ms)this.blockWorkflow(events,'INVOCATION_DURATION_LIMIT_EXCEEDED');else if(workflowMs>=limits.workflow_active_ms)this.blockWorkflow(events,'WORKFLOW_DURATION_LIMIT_EXCEEDED');
+      assertRuntimeBudgets(workflowMs,invocationMs,limits);return Object.freeze({workflow_active_ms:workflowMs,longest_invocation_ms:invocationMs});});
   }
   assertOutputLimit(workflowId:string,streamBytes:number):void {this.withLock(workflowId,events=>{const auth=this.assertProgress(events);try{assertOutputWithinLimit(streamBytes,resolveEffectiveLimits(auth.record.limits));}catch(error){this.blockWorkflow(events,'OUTPUT_LIMIT_EXCEEDED');throw error;}});}
   verify(id:string):readonly LedgerEvent[] {
@@ -508,25 +533,39 @@ export class WorkflowLedger {
         const projection=this.projectEvents(events);const data=event.payload as {event:string;context:Parameters<typeof transitionWorkflow>[2];next_state:WorkflowRecord['state'];next_phase:WorkflowRecord['phase'];authorization_id:string|null};
         if(!data.context)throw Error('LEDGER_TRANSITION_CONTEXT_MISSING');
         const p=data.context.authorizationProof;
-        if(['AUTHORIZE','RESUME','START','ADVANCE_PHASE','REQUEST_FINAL_APPROVAL'].includes(data.event)){
+        if(['AUTHORIZE','RESUME','START','ADVANCE_PHASE','RETURN_FOR_CORRECTION','REQUEST_FINAL_APPROVAL'].includes(data.event)){
           const stored=p?this.latestAuthorization(events,p.authorization_id):null;
           if(!stored||stored.record.revoked_at!==null||canonicalHash(stored.proof)!==canonicalHash(p)||stored.record.contract_sha256!==projection.contract_sha256||Date.parse(stored.record.expires_at)<=Date.parse(event.observed_at))throw Error('LEDGER_AUTHORIZATION_MISMATCH');
         }
-        const nextPhase=data.event==='ADVANCE_PHASE'?data.context.nextPhase:null;
-        const gateName=data.event==='START'?'TASK-READY':data.event==='ADVANCE_PHASE'&&projection.phase==='REVIEWING'&&nextPhase==='EXECUTING'?'REVIEW-GATE':((data.event==='ADVANCE_PHASE'&&projection.phase==='VALIDATING'&&nextPhase==='EXECUTING')||data.event==='REQUEST_FINAL_APPROVAL')?'ValidationGate':null;
+        const nextPhase=data.event==='ADVANCE_PHASE'||data.event==='RETURN_FOR_CORRECTION'?data.context.nextPhase:null;
+        const gateName=data.event==='START'?'TASK-READY':data.event==='ADVANCE_PHASE'&&projection.phase==='REVIEWING'&&['EXECUTING','VALIDATING'].includes(nextPhase??'')?'REVIEW-GATE':data.event==='REQUEST_FINAL_APPROVAL'?'ValidationGate':null;
         if(gateName){const gate=this.latestGate(events,gateName);const authId=data.context.authorizationProof?.authorization_id;
           if(!gate||gate.authorization_id!==authId||canonicalHash(gate.proof)!==canonicalHash(data.context.gateProof)||(gateName!=='TASK-READY'&&!this.gateIsCurrent(events,gate,projection,gateName)))throw new WorkflowLedgerError('LEDGER_TRANSITION_GATE_MISMATCH');}
         if(data.event==='RESUME'){const gate=this.latestGate(events,'TASK-READY');if(!gate||gate.authorization_id!==data.context.authorizationProof?.authorization_id)throw new WorkflowLedgerError('LEDGER_RESUME_GATE_MISMATCH');}
         const finalRecorded=events.some(e=>e.event_type==='FINAL_APPROVAL_RECORDED');
         const prGateRecorded=events.some(e=>e.event_type==='P1_PR_GATE_VERIFIED');
+        if(data.event==='ADVANCE_PHASE'&&projection.phase==='REVIEWING'){
+          const origin=this.reviewOriginPhase(events);if((origin==='PLANNING'&&nextPhase!=='EXECUTING')||(origin==='EXECUTING'&&nextPhase!=='VALIDATING')||!['PLANNING','EXECUTING'].includes(origin??''))throw new WorkflowLedgerError('LEDGER_REVIEW_PHASE_ORIGIN_INVALID');
+        }
+        if(data.event==='RETURN_FOR_CORRECTION'){
+          const artifact=this.currentArtifact(events);const review=artifact&&this.currentReview(events,artifact);const validation=artifact&&review&&this.currentValidation(events,artifact,review);const origin=this.reviewOriginPhase(events);
+          const reviewReturn=projection.phase==='REVIEWING'&&nextPhase===origin&&!!review&&(review.payload as {outcome:string}).outcome==='CHANGES_REQUESTED';const validationReturn=projection.phase==='VALIDATING'&&nextPhase==='EXECUTING'&&!!validation&&(validation.payload as {result:string}).result==='FAIL';if(!reviewReturn&&!validationReturn)throw new WorkflowLedgerError('LEDGER_CORRECTION_TRANSITION_INVALID');
+        }
+        if(data.event==='REQUEST_FINAL_APPROVAL'){
+          const pending=this.invocationsFrom(events).some(i=>!this.invocationSettled(events,i));const unresolved=this.effectsFrom(events).some(e=>['INTENT_RECORDED','DISPATCHED','OBSERVED','UNKNOWN','RECONCILIATION_REQUIRED'].includes(e.state));
+          if(pending||unresolved||!this.hasCurrentSuccessfulEvidence(events))throw new WorkflowLedgerError('LEDGER_FINAL_READINESS_INVALID');
+        }
         const next=data.event==='APPROVE'&&finalRecorded&&prGateRecorded?projectVerifiedFinalApproval(projection):transitionWorkflow(projection,data.event,data.context);
+        if(data.event==='ADVANCE_PHASE'||data.event==='RETURN_FOR_CORRECTION'){
+          const authId=data.context.authorizationProof?.authorization_id;const authorization=authId?this.latestAuthorization(events,authId):null;if(!authorization)throw new WorkflowLedgerError('LEDGER_CYCLE_AUTHORIZATION_MISSING');const limits=resolveEffectiveLimits(authorization.record.limits);if(next.revision_cycles>limits.review_cycles||next.correction_cycles>limits.correction_cycles)throw new WorkflowLedgerError('LEDGER_CYCLE_LIMIT_EXCEEDED');
+        }
         if(next.state!==data.next_state||next.phase!==data.next_phase||next.authorization_id!==data.authorization_id)throw Error('LEDGER_PROJECTION_MISMATCH');
       } else if(event.event_type==='AUTHORIZATION_RECORDED'){
         const p=event.payload as {record:WorkflowAuthorizationRecord;approval:ApprovalRecord;contract:TaskContract;trust:TrustedApproval;proof:import('./machine.js').AuthorizationProof};
         const approvalHash=canonicalHash(p.approval),contractHash=canonicalHash(p.contract);
         if(p.record.workflow_id!==id||p.record.approval_record_sha256!==approvalHash||p.record.contract_sha256!==contractHash||p.trust.record_sha256!==approvalHash||p.trust.revoked||p.proof.authorization_id!==p.record.authorization_id||p.proof.workflow_id!==id||p.proof.contract_sha256!==contractHash||p.proof.expires_at!==p.record.expires_at||p.proof.revoked)throw Error('LEDGER_AUTHORIZATION_RECORD_INVALID');
-        const configured=this.options.trusted_approvals??[];if(!configured.some(t=>canonicalHash(t)===canonicalHash(p.trust)&&!t.revoked))throw Error('LEDGER_AUTHORITY_CONFIG_MISMATCH');
-        const decision=authorizeWorkflow(p.record,p.approval,p.contract,configured);if(!decision.allowed)throw Error('LEDGER_AUTHORIZATION_RECORD_INVALID');
+        const configured=this.options.trusted_approvals??[];if(!configured.some(t=>t.record_sha256===p.trust.record_sha256&&t.authorized_by===p.trust.authorized_by&&t.approval_source===p.trust.approval_source))throw Error('LEDGER_AUTHORITY_CONFIG_MISMATCH');
+        const decision=authorizeWorkflow(p.record,p.approval,p.contract,[p.trust]);if(!decision.allowed)throw Error('LEDGER_AUTHORIZATION_RECORD_INVALID');
       } else if(event.event_type==='GATE_DECISION'){
         const p=event.payload as {gate:string;authorization_id:string;allowed:boolean;proof:NonNullable<Parameters<typeof transitionWorkflow>[2]>['gateProof'];evidence_sha256:string;basis_sha256?:string;phase?:string;revision_cycles?:number;correction_cycles?:number;fixture_id?:string};
         const authorization=this.latestAuthorization(events,p.authorization_id),projection=this.projectEvents(events);
@@ -545,8 +584,10 @@ export class WorkflowLedger {
         const approval=p.approval,auth=this.currentAuthorization(events),trust=trustApproval(approval);
         const pr=[...events].reverse().find(e=>e.event_type==='P1_PR_GATE_VERIFIED')?.payload as {gate:unknown;bindings:{workflow_id:string;contract_sha256:string;attempt_id:string;diff_sha256:string;review_sha256:string;evidence_sha256:string;review_id:string}}|undefined;
         const b=pr?.bindings;const priorWorkflow=this.projectEvents(events);
-        if(!auth||!b||priorWorkflow.state!=='AWAITING_APPROVAL'||p.approval_sha256!==canonicalHash(approval)||canonicalHash(p.trust)!==canonicalHash(trust)||p.trust.revoked||Date.parse(auth.record.expires_at)<=Date.parse(event.observed_at)||!verifyApproval(auth.contract,approval,{scope:'MERGE',trusted:[p.trust],attempt_id:b.attempt_id,diff_sha256:b.diff_sha256,review_id:b.review_id}).allowed||b.workflow_id!==id||b.contract_sha256!==auth.record.contract_sha256)throw new WorkflowLedgerError('LEDGER_FINAL_APPROVAL_INVALID');
-        const authored=events.some(e=>e.event_type==='ARTIFACT_AUTHORED'&&(e.payload as {diff_sha256?:string}).diff_sha256===b.diff_sha256),reviewed=events.some(e=>e.event_type==='ARTIFACT_REVIEWED'&&(e.payload as {review_sha256?:string}).review_sha256===b.review_sha256),evidence=events.some(e=>e.event_type==='HOST_EVIDENCE'&&(e.payload as {kind?:string;evidence_sha256?:string;artifact_sha256?:string}).kind==='FINAL'&&(e.payload as {evidence_sha256?:string}).evidence_sha256===b.evidence_sha256&&(e.payload as {artifact_sha256?:string}).artifact_sha256===(events.find(x=>x.event_type==='ARTIFACT_AUTHORED'&&(x.payload as {diff_sha256?:string}).diff_sha256===b.diff_sha256)?.payload as {artifact_sha256?:string}|undefined)?.artifact_sha256);
+        const configured=this.options.trusted_approvals??[];const trustedHost=configured.some(t=>t.record_sha256===p.trust.record_sha256&&t.authorized_by===p.trust.authorized_by&&t.approval_source===p.trust.approval_source);
+        if(!auth||!b||priorWorkflow.state!=='AWAITING_APPROVAL'||p.approval_sha256!==canonicalHash(approval)||canonicalHash(p.trust)!==canonicalHash(trust)||p.trust.revoked||!trustedHost||Date.parse(auth.record.expires_at)<=Date.parse(event.observed_at)||!verifyApproval(auth.contract,approval,{scope:'MERGE',trusted:[p.trust],attempt_id:b.attempt_id,diff_sha256:b.diff_sha256,review_id:b.review_id}).allowed||b.workflow_id!==id||b.contract_sha256!==auth.record.contract_sha256)throw new WorkflowLedgerError('LEDGER_FINAL_APPROVAL_INVALID');
+        const artifact=this.currentArtifact(events);const review=artifact&&this.currentReview(events,artifact);const validation=artifact&&review&&this.currentValidation(events,artifact,review);const final=events.find(e=>e.event_type==='HOST_EVIDENCE'&&(()=>{const x=e.payload as {kind:string;evidence_sha256:string;artifact_sha256?:string;diff_sha256?:string;review_sha256?:string;validation_sha256?:string;result?:string};return x.kind==='FINAL'&&x.evidence_sha256===b.evidence_sha256&&x.artifact_sha256===artifact?.artifact_sha256&&x.diff_sha256===artifact?.diff_sha256&&x.review_sha256===(review?.payload as {review_sha256:string}|undefined)?.review_sha256&&x.validation_sha256===(validation?.payload as {evidence_sha256:string}|undefined)?.evidence_sha256&&x.result==='PASS';})());
+        const authored=!!artifact&&artifact.diff_sha256===b.diff_sha256&&artifact.fixture_id===(p.fixture_id??this.options.fixture_id),reviewed=!!artifact&&!!review&&this.reviewIndependent(events,artifact,review)&&(review.payload as {review_sha256:string}).review_sha256===b.review_sha256,evidence=!!final&&!!validation&&(validation.payload as {result:string}).result==='PASS'&&this.hasCurrentSuccessfulEvidence(events);
         const f=p.proof;if(!authored||!reviewed||!evidence||!f||f.workflow_id!==id||f.contract_sha256!==auth.record.contract_sha256||f.diff_sha256!==b.diff_sha256||f.review_sha256!==b.review_sha256||f.evidence_sha256!==b.evidence_sha256||f.actor!==approval.authorized_by||f.source!==(p.fixture_id?'SIMULATED_HUMAN':'HUMAN')||f.verified!==true||!Number.isFinite(Date.parse(f.approved_at))||(p.fixture_id!==null&&p.fixture_id!==this.options.fixture_id))throw new WorkflowLedgerError('LEDGER_FINAL_APPROVAL_BINDING_INVALID');
       } else if(event.event_type==='INVOCATION_RESERVED'){
         const p=event.payload as {invocation_id:string;reservation_number:number;limit:number};reservations++;
@@ -560,6 +601,7 @@ export class WorkflowLedger {
       } else if(event.event_type==='INVOCATION_TRANSITION'){
         const p=event.payload as {invocation_id:string;event:string;context:Parameters<typeof transitionInvocation>[2];record:AgentInvocationRecord};const current=invocationMap.get(p.invocation_id);
         if(!current)throw Error('INVOCATION_NOT_FOUND');const workflowState=this.projectEvents(events).state;
+        if(p.context?.duration_limit_exceeded){const limit=events.some(e=>e.event_type==='WORKFLOW_TRANSITION'&&(e.payload as {event:string;context?:{reason?:string}}).event==='BLOCK'&&(e.payload as {context?:{reason?:string}}).context?.reason==='INVOCATION_DURATION_LIMIT_EXCEEDED');if(p.event!=='CANCEL'||!limit)throw new WorkflowLedgerError('INVOCATION_TIMEOUT_PROVENANCE_INVALID');}
         if(p.event==='START'&&workflowState!=='ACTIVE'||p.event==='RESULT_SUCCESS'&&workflowState!=='ACTIVE')throw Error('INVOCATION_WORKFLOW_STATE_INVALID');
         if(p.event==='PROCESS_STARTED'&&workflowState!=='ACTIVE'&&!(workflowState==='CANCEL_REQUESTED'&&current.state==='CANCEL_REQUESTED'))throw Error('INVOCATION_WORKFLOW_STATE_INVALID');
         if(p.event==='BLOCK'&&(current.state==='CREATED'?p.context?.processNeverStarted!==true:!p.context?.processObservedStopped))throw Error('INVOCATION_BLOCK_UNRECONCILED');
@@ -570,6 +612,7 @@ export class WorkflowLedger {
         if(!this.validator.validate('AgentMessage',message).valid||!verifyNormalizedMessage(message)||message.message_type==='CONTROL_EVENT'||message.workflow_id!==id||message.sequence!==sequence||message.previous_event_hash!==event.previous_event_hash||!invocation||invocation.state!=='RUNNING')throw Error('MESSAGE_JOURNAL_INVALID');
         const idKey=message.source_event_id!==null?'event:'+message.source_event_id:'cursor:'+message.source_cursor;
         if(events.some(e=>e.event_type==='AGENT_MESSAGE'&&(e.payload as NormalizedAgentMessage).invocation_id===message.invocation_id&&((e.payload as NormalizedAgentMessage).source_event_id!==null?'event:'+((e.payload as NormalizedAgentMessage).source_event_id):'cursor:'+((e.payload as NormalizedAgentMessage).source_cursor))===idKey))throw Error('MESSAGE_REPLAY_IN_LEDGER');
+        if(message.source_cursor!==null){const cursors=events.filter(e=>e.event_type==='AGENT_MESSAGE'&&(e.payload as NormalizedAgentMessage).invocation_id===message.invocation_id).map(e=>(e.payload as NormalizedAgentMessage).source_cursor).filter((cursor):cursor is string=>cursor!==null);if(cursors.some(cursor=>compareDecimalCursor(message.source_cursor!,cursor)<=0))throw new WorkflowLedgerError('MESSAGE_CURSOR_SEQUENCE_INVALID');}
       } else if(event.event_type==='EFFECT_INTENT'){
         const effect=event.payload as EffectRecord;if(!this.validator.validate('EffectRecord',effect).valid||effect.workflow_id!==id||effect.state!=='INTENT_RECORDED'||effectMap.has(effect.effect_id)||this.projectEvents(events).state!=='ACTIVE'||invocationMap.get(effect.invocation_id)?.state!=='RUNNING')throw Error('EFFECT_INTENT_INVALID');effectMap.set(effect.effect_id,effect);
       } else if(event.event_type==='EFFECT_TRANSITION'){
@@ -581,8 +624,10 @@ export class WorkflowLedger {
         const p=event.payload as {artifact_sha256:string;review_sha256:string;invocation_id:string;fixture_id:string;identity_sha256:string};const reviewer=invocationMap.get(p.invocation_id);const authors=events.filter(e=>e.event_type==='ARTIFACT_AUTHORED'&&(e.payload as {artifact_sha256:string}).artifact_sha256===p.artifact_sha256).map(e=>(e.payload as {invocation_id:string}).invocation_id);
         if(!/^[a-f0-9]{64}$/.test(p.artifact_sha256)||!/^[a-f0-9]{64}$/.test(p.review_sha256)||!reviewer||reviewer.role!=='REVIEWER'||reviewer.state!=='SUCCEEDED'||p.fixture_id!==this.options.fixture_id||p.identity_sha256!==canonicalHash(reviewer.identity)||!authors.length||authors.includes(p.invocation_id)||authors.some(authorId=>{const author=invocationMap.get(authorId);return !author||!evaluateIndependentReview(author.identity,reviewer.identity,{reviewerInvocationId:p.invocation_id,artifactAuthorInvocationIds:authors}).allowed;}))throw Error('ARTIFACT_REVIEW_INVALID');
       } else if(event.event_type==='HOST_EVIDENCE'){
-        const p=event.payload as {kind:string;workflow_id:string;invocation_id:string;evidence_sha256:string;artifact_sha256?:string;fixture_id:string};const i=invocationMap.get(p.invocation_id);
-        if(!this.options.fixture_id||p.fixture_id!==this.options.fixture_id||p.workflow_id!==id||!i||i.state!=='SUCCEEDED'||i.identity.status!=='VERIFIED'||!['FINAL','VALIDATION'].includes(p.kind)||!/^[a-f0-9]{64}$/.test(p.evidence_sha256)||!p.artifact_sha256||!/^[a-f0-9]{64}$/.test(p.artifact_sha256)||!events.some(e=>e.event_type==='ARTIFACT_AUTHORED'&&(e.payload as {artifact_sha256:string}).artifact_sha256===p.artifact_sha256)||(p.kind==='VALIDATION'&&!['VALIDATOR','IMPLEMENTER'].includes(i.role)))throw Error('HOST_EVIDENCE_INVALID');
+        const p=event.payload as {kind:string;workflow_id:string;invocation_id:string;evidence_sha256:string;artifact_sha256?:string;diff_sha256?:string;review_sha256?:string;validation_sha256?:string;result?:string;fixture_id:string};const i=invocationMap.get(p.invocation_id);const artifact=this.currentArtifact(events);const review=artifact&&this.currentReview(events,artifact);
+        const linked=!!artifact&&p.artifact_sha256===artifact.artifact_sha256&&p.diff_sha256===artifact.diff_sha256&&p.fixture_id===artifact.fixture_id&&!!review&&p.review_sha256===(review.payload as {review_sha256:string}).review_sha256&&this.reviewIndependent(events,artifact,review);
+        const priorValidation=artifact&&review&&this.currentValidation(events,artifact,review);
+        if(!this.options.fixture_id||p.fixture_id!==this.options.fixture_id||p.workflow_id!==id||!i||i.state!=='SUCCEEDED'||i.identity.status!=='VERIFIED'||!['FINAL','VALIDATION'].includes(p.kind)||!/^[a-f0-9]{64}$/.test(p.evidence_sha256)||!linked||!['PASS','FAIL'].includes(p.result??'')||(p.kind==='VALIDATION'&&(!['VALIDATOR','IMPLEMENTER'].includes(i.role)||event.sequence<=review!.sequence))||(p.kind==='FINAL'&&(p.result!=='PASS'||!priorValidation||p.validation_sha256!==(priorValidation.payload as {evidence_sha256:string}).evidence_sha256||(priorValidation.payload as {result:string}).result!=='PASS')))throw Error('HOST_EVIDENCE_INVALID');
       } else if(event.event_type==='AUTHORIZATION_REVOKED'){
         const p=event.payload as {authorization_id:string;workflow_id:string;revoked_at:string;record:WorkflowAuthorizationRecord;proof:import('./machine.js').AuthorizationProof};const projection=this.projectEvents(events);const prior=this.latestAuthorization(events,p.authorization_id);
         if(p.workflow_id!==id||projection.authorization_id!==p.authorization_id||!Number.isFinite(Date.parse(p.revoked_at))||!['AUTHORIZED','ACTIVE','AWAITING_APPROVAL','BLOCKED'].includes(projection.state)||!prior||prior.record.revoked_at!==null||p.record.revoked_at!==p.revoked_at||canonicalHash({...p.record,revoked_at:null})!==canonicalHash(prior.record)||canonicalHash(p.proof)!==canonicalHash(prior.proof))throw Error('AUTHORIZATION_REVOCATION_INVALID');

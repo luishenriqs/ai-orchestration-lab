@@ -7,9 +7,9 @@ export interface WorkflowTransitionContext { readonly authorizationValid?:boolea
 function gateMatches(proof:GateProof|undefined,workflow:WorkflowRecord,expected:GateProof['gate']):boolean{return !!proof&&proof.gate===expected&&proof.allowed&&proof.workflow_id===workflow.workflow_id&&proof.contract_sha256===workflow.contract_sha256&&['HOST','SIMULATED_HOST'].includes(proof.authority)&&Number.isFinite(Date.parse(proof.decided_at));}
 function authorizationMatches(proof:AuthorizationProof|undefined,workflow:WorkflowRecord):boolean{return !!proof&&proof.verified&&proof.revoked===false&&proof.workflow_id===workflow.workflow_id&&proof.contract_sha256===workflow.contract_sha256&&proof.authorization_id.length>0&&['P1_TRUSTED_APPROVAL','SIMULATED_HOST'].includes(proof.authority)&&Date.parse(proof.expires_at)>Date.parse(proof.verified_at);}
 const terminal=new Set<WorkflowState>(['CANCELLED','REJECTED','FAILED','COMPLETED']);
-const phaseEdges:Readonly<Record<WorkflowPhase,readonly WorkflowPhase[]>>={NONE:['PLANNING'],PLANNING:['REVIEWING'],REVIEWING:['EXECUTING','PLANNING'],EXECUTING:['VALIDATING'],VALIDATING:['EXECUTING']};
+const phaseEdges:Readonly<Record<WorkflowPhase,readonly WorkflowPhase[]>>={NONE:['PLANNING'],PLANNING:['REVIEWING'],REVIEWING:['EXECUTING','VALIDATING','PLANNING'],EXECUTING:['REVIEWING'],VALIDATING:[]};
 const workflowEvents:Readonly<Record<WorkflowState,readonly string[]>>={
-  CREATED:['AUTHORIZE','REJECT','CANCEL'],AUTHORIZED:['START','CANCEL','REVOKE','BLOCK'],ACTIVE:['ADVANCE_PHASE','REQUEST_FINAL_APPROVAL','BLOCK','FAIL','FAIL_PENDING','CANCEL','REVOKE'],
+  CREATED:['AUTHORIZE','REJECT','CANCEL'],AUTHORIZED:['START','CANCEL','REVOKE','BLOCK'],ACTIVE:['ADVANCE_PHASE','RETURN_FOR_CORRECTION','REQUEST_FINAL_APPROVAL','BLOCK','FAIL','FAIL_PENDING','CANCEL','REVOKE'],
   AWAITING_APPROVAL:['APPROVE','REJECT','CANCEL','REVOKE','BLOCK'],BLOCKED:['RESUME','FAIL','FAIL_PENDING','CANCEL','CANCEL_NO_EFFECT','REVOKE'],CANCEL_REQUESTED:['CONFIRM_CANCEL','CONFIRM_FAIL','CANCEL_UNCERTAIN'],
   CANCELLED:[],REJECTED:[],FAILED:[],COMPLETED:[],
 };
@@ -25,7 +25,8 @@ export function transitionWorkflow(current:WorkflowRecord,event:string,ctx:Workf
     case 'REJECT': state='REJECTED';break;
     case 'CANCEL': if(current.state==='CREATED'||current.state==='AUTHORIZED'||current.state==='AWAITING_APPROVAL'){if(ctx.noPendingEffects!==true) throw Error('CANCEL_RECONCILIATION_REQUIRED');state='CANCELLED';}else state='CANCEL_REQUESTED';break;
     case 'START': if(!ctx.gatesReady||!gateMatches(ctx.gateProof,current,'TASK-READY')||!authorizationMatches(ctx.authorizationProof,current)) throw Error('INITIAL_GATES_REQUIRED');state='ACTIVE';phase='PLANNING';break;
-    case 'ADVANCE_PHASE': {if(!ctx.nextPhase||!phaseEdges[current.phase].includes(ctx.nextPhase))throw Error('PHASE_GATE_OR_EDGE_INVALID');const expected=current.phase==='REVIEWING'&&ctx.nextPhase==='EXECUTING'?'REVIEW-GATE':current.phase==='VALIDATING'&&ctx.nextPhase==='EXECUTING'?'ValidationGate':null;if(expected&&(!ctx.phaseGatePassed||!gateMatches(ctx.gateProof,current,expected)))throw Error('PHASE_GATE_OR_EDGE_INVALID');phase=ctx.nextPhase;if(current.phase==='REVIEWING')revisionCycles++;if((current.phase==='REVIEWING'&&ctx.nextPhase==='PLANNING')||(current.phase==='VALIDATING'&&ctx.nextPhase==='EXECUTING'))correctionCycles++;break;}
+    case 'ADVANCE_PHASE': {if(!ctx.nextPhase||!phaseEdges[current.phase].includes(ctx.nextPhase))throw Error('PHASE_GATE_OR_EDGE_INVALID');const expected=current.phase==='REVIEWING'&&['EXECUTING','VALIDATING'].includes(ctx.nextPhase)?'REVIEW-GATE':null;if(expected&&(!ctx.phaseGatePassed||!gateMatches(ctx.gateProof,current,expected)))throw Error('PHASE_GATE_OR_EDGE_INVALID');phase=ctx.nextPhase;if(current.phase==='REVIEWING')revisionCycles++;break;}
+    case 'RETURN_FOR_CORRECTION': {if(!ctx.nextPhase||!((current.phase==='REVIEWING'&&(ctx.nextPhase==='PLANNING'||ctx.nextPhase==='EXECUTING'))||(current.phase==='VALIDATING'&&ctx.nextPhase==='EXECUTING')))throw Error('CORRECTION_EDGE_INVALID');phase=ctx.nextPhase;correctionCycles++;if(current.phase==='REVIEWING'&&ctx.nextPhase==='PLANNING')revisionCycles++;break;}
     case 'REQUEST_FINAL_APPROVAL': if(current.phase!=='VALIDATING'||!ctx.gatesReady||!gateMatches(ctx.gateProof,current,'ValidationGate')) throw Error('FINAL_VALIDATION_REQUIRED');state='AWAITING_APPROVAL';break;
     case 'APPROVE': throw Error('USE_FINAL_APPROVAL_API');
     case 'BLOCK': state='BLOCKED';break;
@@ -52,7 +53,7 @@ export function classifyLateProcessStart(current:AgentInvocationRecord):{readonl
   return Object.freeze({action:'CONTAIN_AND_RECONCILE',invocation_id:current.invocation_id});
 }
 const invocationEvents:Readonly<Record<InvocationState,readonly string[]>>={CREATED:['START','BLOCK','CANCEL'],STARTING:['PROCESS_STARTED','START_FAILED','INTERRUPTED','CANCEL'],RUNNING:['RESULT_SUCCESS','RESULT_FAILURE','INTERRUPTED','CANCEL'],CANCEL_REQUESTED:['CONFIRM_CANCEL','RESULT_UNCERTAIN','RESULT_FAILURE','PROCESS_STARTED'],SUCCEEDED:[],FAILED:[],INTERRUPTED:[],CANCELLED:[],BLOCKED:[]};
-export interface InvocationTransitionContext {readonly terminalResultValid?:boolean;readonly processObservedStopped?:boolean;readonly processNeverStarted?:boolean;readonly identityValid?:boolean;readonly protocolValid?:boolean;readonly evidenceObserved?:boolean;readonly revocationPending?:boolean;readonly observedAt?:string;}
+export interface InvocationTransitionContext {readonly terminalResultValid?:boolean;readonly processObservedStopped?:boolean;readonly processNeverStarted?:boolean;readonly duration_limit_exceeded?:boolean;readonly identityValid?:boolean;readonly protocolValid?:boolean;readonly evidenceObserved?:boolean;readonly revocationPending?:boolean;readonly observedAt?:string;}
 export function transitionInvocation(current:AgentInvocationRecord,event:string,ctx:InvocationTransitionContext={}):AgentInvocationRecord {
   if(!invocationEvents[current.state].includes(event)) throw Error('INVALID_INVOCATION_TRANSITION');
   let state:InvocationState=current.state;

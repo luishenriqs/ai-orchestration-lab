@@ -23,7 +23,7 @@ export function measureWorkflowActiveMs(events:readonly LedgerEvent[],now:string
 }
 export function measureInvocationMs(invocations:readonly AgentInvocationRecord[],now:string):number {
   const end=Date.parse(now);if(!Number.isFinite(end))throw Error('INVALID_CLOCK_VALUE');let max=0;
-  for(const invocation of invocations){if(invocation.started_at){const started=Date.parse(invocation.started_at),finished=invocation.finished_at===null?end:Date.parse(invocation.finished_at);if(!Number.isFinite(started)||!Number.isFinite(finished)||finished<started)throw Error('INVALID_INVOCATION_TIME');max=Math.max(max,finished-started);}}
+  for(const invocation of invocations){if(invocation.started_at&&invocation.finished_at===null){const started=Date.parse(invocation.started_at);if(!Number.isFinite(started)||end<started)throw Error('INVALID_INVOCATION_TIME');max=Math.max(max,end-started);}}
   return Math.floor(max);
 }
 export function assertRuntimeBudgets(workflowMs:number,invocationMs:number,limits:WorkflowLimits):void {assertWithinDuration(workflowMs,limits.workflow_active_ms);assertWithinDuration(invocationMs,limits.invocation_ms);}

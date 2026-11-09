@@ -17,11 +17,11 @@ function pathSegments(value:string):string[]|null {
 }
 function withinPath(path:string,base:string):boolean{return path===base||path.startsWith(base.endsWith('/')?base:base+'/');}
 function pathsIntersect(a:string,b:string):boolean{return withinPath(a,b)||withinPath(b,a);}
-export function validateAuthorizedPaths(paths:readonly string[],contractPaths:readonly string[],forbiddenChanges:readonly string[]):readonly string[] {
+export function validateAuthorizedPaths(paths:readonly string[],contractPaths:readonly string[]|null,forbiddenChanges:readonly string[]):readonly string[] {
   const reasons:string[]=[];
   for(const path of paths){
     if(!pathSegments(path)){reasons.push('PATH_INVALID');continue;}
-    if(contractPaths.length&&!contractPaths.some(base=>!!pathSegments(base)&&withinPath(path,base)))reasons.push('AUTHORIZATION_PATH_AMPLIFICATION');
+    if(contractPaths!==null&&!contractPaths.some(base=>!!pathSegments(base)&&withinPath(path,base)))reasons.push('AUTHORIZATION_PATH_AMPLIFICATION');
     if(forbiddenChanges.some(forbidden=>pathsIntersect(path,forbidden)))reasons.push('FORBIDDEN_CHANGE_PATH');
   }
   return Object.freeze([...new Set(reasons)]);
@@ -62,7 +62,7 @@ export function checkAuthorization(record:WorkflowAuthorizationRecord,binding:Au
   if(record.revoked_at!==null)reasons.push('AUTHORIZATION_REVOKED');
   if(Date.parse(record.expires_at)<=Date.parse(now))reasons.push('AUTHORIZATION_EXPIRED');
   if(!record.allowed_operations.includes(operation))reasons.push('OPERATION_OUT_OF_SCOPE');
-  reasons.push(...validateAuthorizedPaths(record.allowed_paths,[],forbiddenChanges));
+  reasons.push(...validateAuthorizedPaths(record.allowed_paths,null,forbiddenChanges));
   let agentKey:string|null=null;try{agentKey=canonicalAgentAuthorizationId(agent);}catch{reasons.push('AGENT_IDENTITY_UNVERIFIED');}
   if(agentKey===null||!record.allowed_agents.includes(agentKey))reasons.push('AGENT_OUT_OF_SCOPE');
   if(['WRITE','LOCAL_COMMIT'].includes(operation)&&path===undefined)reasons.push('TARGET_PATH_REQUIRED');
